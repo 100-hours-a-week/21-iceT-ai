@@ -13,6 +13,7 @@ app.include_router(
     tags=["해설지 생성 기능"],
 )
 
+
 # health check
 @app.get("/healthz")
 def healthz():
