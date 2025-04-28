@@ -1,4 +1,4 @@
-def getSolutionPrompt(
+def get_solution_prompt(
     problem_number: int,
     title: str,
     description: str,

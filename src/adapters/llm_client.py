@@ -1,11 +1,11 @@
 import openai
-from Config import settings
+from config import settings
 
 # OpenAI 클라이언트 초기화
 openai.api_key = settings.openai_api_key
 
 
-def generateSolution(prompt: str) -> str:
+def generate_solution(prompt: str) -> str:
     """
     OpenAI ChatCompletion 단일 호출 (스트리밍 없이)
     """
