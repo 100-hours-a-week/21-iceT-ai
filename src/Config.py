@@ -13,4 +13,4 @@ class Settings(BaseSettings):
     temperature: float = 0.3
     max_tokens: int = 512
 
-settings = Settings()
+settings = Settings() 
