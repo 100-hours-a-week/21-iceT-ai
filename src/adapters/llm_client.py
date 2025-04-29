@@ -1,18 +1,23 @@
-import openai
+from langchain_openai import ChatOpenAI
 from config import settings
+from dotenv import load_dotenv
+from models.solution_schema import SolutionResponse
 
-# OpenAI 클라이언트 초기화
-openai.api_key = settings.openai_api_key
+# 환경변수 로드
+load_dotenv()
 
+# Langchain LLM 클라이언트 설정
+llm = ChatOpenAI(
+    model=settings.model,
+    temperature=settings.temperature,
+    max_tokens=settings.max_tokens,
+)
 
-def generate_solution(prompt: str) -> str:
+structured_llm = llm.with_structured_output(SolutionResponse)
+
+def generate_solution(prompt: str) -> SolutionResponse:
     """
-    OpenAI ChatCompletion 단일 호출 (스트리밍 없이)
+    LangChain LLM 클라이언트를 사용하여 솔루션 생성
     """
-    response = openai.ChatCompletion.create(
-        model=settings.model_name,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=settings.temperature,
-        max_tokens=settings.max_tokens,
-    )
-    return response.choices[0].message.content
+    response = structured_llm.invoke(prompt)
+    return response

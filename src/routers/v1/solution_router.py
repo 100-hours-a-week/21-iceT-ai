@@ -6,17 +6,8 @@ from services.solution_service import explain_solution
 router = APIRouter()
 
 # POST /api/v1/solution
+# TODO: 오류 처리 개선
 @router.post("/solution", response_model=SolutionResponse)
-async def solution_endpoint(body: SolutionRequest):
-    try:
-        return await explain_solution(body)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-#############################################
-# TODO : 미완성
-#############################################
 async def solution_endpoint(body: SolutionRequest):
     try:
         return await explain_solution(body)
