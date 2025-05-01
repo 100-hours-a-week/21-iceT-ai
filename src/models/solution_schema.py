@@ -22,8 +22,7 @@ class SolutionCode(BaseModel):
     java: str = Field(description="Java 코드")
 
 class SolutionResponse(BaseModel):
-    language: str = Field(description="사용된 언어명")
     problem_check: ProblemCheck = Field(description="문제 개요 및 알고리즘 설명")
     problem_solving: str = Field(description="단계별 구체적인 문제 풀이 방법")
-    solution_code: SolutionCode = Field(description="정답 코드")
+    solution_code: SolutionCode = Field(description="python, c++, java 정답 코드")
 
