@@ -7,6 +7,8 @@ class SolutionRequest(BaseModel):
     problem_number: int
     title: str
     description: str
+    input: str
+    output: str
     input_example: str
     output_example: str
     language: str
@@ -22,6 +24,7 @@ class SolutionCode(BaseModel):
     java: str = Field(description="Java 코드")
 
 class SolutionResponse(BaseModel):
+    problem_number: int = Field(description="문제 번호")
     problem_check: ProblemCheck = Field(description="문제 개요 및 알고리즘 설명")
     problem_solving: str = Field(description="단계별 구체적인 문제 풀이 방법")
     solution_code: SolutionCode = Field(description="python, c++, java 정답 코드")
