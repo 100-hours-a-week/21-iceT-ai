@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 
+
 # 로그 출력 설정
 def format_error_response(code: str, message: str, hint: str = ""):
     return {
@@ -82,7 +83,7 @@ def add_exception_handlers(app: FastAPI):
                 hint=str(exc)
             )
         )
-
+      
     # 기타 모든 예외 처리
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):
