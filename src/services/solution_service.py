@@ -1,6 +1,6 @@
 from src.core.prompt_templates import SOLUTION_PROMPT
 from src.adapters.llm_client import generate_solution
-from src.models.solution_schema import SolutionRequest, SolutionResponse
+from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 
 async def explain_solution(req: SolutionRequest) -> SolutionResponse:
     prompt = SOLUTION_PROMPT.invoke(
@@ -11,8 +11,7 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
             "input":          req.input,
             "output":         req.output,
             "input_example":  req.input_example,
-            "output_example": req.output_example,
-            "language":       req.language,
+            "output_example": req.output_example
         }
     )
     result = generate_solution(prompt)
