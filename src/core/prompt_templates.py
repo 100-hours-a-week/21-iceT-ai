@@ -1,5 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 
+# 백준 문제 정보를 기반으로 해설을 생성하는 프롬프트 템플릿
 SOLUTION_PROMPT = PromptTemplate(
     template="""
     아래 백준 문제 정보를 바탕으로, 출력 순서에 따라 **JSON 형식**으로만 해설을 작성하세요.
