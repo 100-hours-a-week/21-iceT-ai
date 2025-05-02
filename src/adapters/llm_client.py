@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from src.config import settings
 from dotenv import load_dotenv
-from src.models.solution_schema import SolutionResponse
+from src.schemas.solution_schema import SolutionResponse
 
 # 환경변수 로드
 load_dotenv()
