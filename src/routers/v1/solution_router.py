@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.models.solution_schema import SolutionRequest, SolutionResponse
+from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.services.solution_service import explain_solution
 
 router = APIRouter()
