@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Environment
+.venv/
+env/
+venv/
+*.env
+
+# VSCode
+.vscode/
+
+# 기타
+.DS_Store
+logs/
+test_inference.py
