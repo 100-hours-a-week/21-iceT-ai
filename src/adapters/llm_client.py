@@ -13,8 +13,10 @@ llm = ChatOpenAI(
     max_tokens=settings.max_tokens,
 )
 
+# LLM의 응답을 Pydantic 모델로 구조화하기 위한 래퍼
 structured_llm = llm.with_structured_output(SolutionResponse)
 
+# 프롬프트 모델에 전달하고 구조화된 응답 반환
 def generate_solution(prompt: str) -> SolutionResponse:
     response = structured_llm.invoke(prompt)
     return response

@@ -4,7 +4,12 @@ from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import time
 import random
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -16,11 +21,12 @@ def create_driver():
     driver = webdriver.Chrome(service=service, options=options)
     return driver
 
+# 로그인 쿠키 추가 함수
 def login_with_cookies(driver):
     driver.get("https://www.acmicpc.net/")
     driver.add_cookie({
         'name': 'OnlineJudge',
-        'value': 'rfnopgo62k1f6ivnvife6lgqco',
+        'value': os.getenv("BOJ_COOKIE_ONLINEJUDGE"),
         'domain': '.acmicpc.net',
         'path': '/',
         'httpOnly': True,
@@ -28,7 +34,7 @@ def login_with_cookies(driver):
     })
     driver.add_cookie({
         'name': 'bojautologin',
-        'value': '0e8402e9700996e42271cc7b841135a0dcbf7de5',
+        'value': os.getenv("BOJ_COOKIE_AUTLOGIN"),
         'domain': '.acmicpc.net',
         'path': '/',
         'httpOnly': True,
@@ -43,6 +49,7 @@ USER_AGENTS = [
     "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Mobile/15E148 Safari/604.1"
 ]
 
+# 백준 문제를 크롤링하는 함수
 def crawl_boj_problem_with_selenium(driver, problem_id):
     url = f"https://www.acmicpc.net/problem/{problem_id}"
     try:
@@ -55,6 +62,7 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
             tag = soup.select_one(selector)
             return tag.text.strip() if tag else ""
 
+        # 문제 구성 요소 파싱
         title = safe_select("#problem_title")
         description = safe_select("#problem_description")
         input_desc = safe_select("#problem_input")
