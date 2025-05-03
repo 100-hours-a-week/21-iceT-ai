@@ -25,7 +25,7 @@ class SolutionCode(BaseModel):
 
 # 전체 응답 스키마
 class SolutionResponse(BaseModel):
-    problem_number: int = Field(description="문제 번호")
+    problemNumber: int = Field(description="문제 번호")
     problem_check: ProblemCheck = Field(description="문제 개요 및 알고리즘 설명")
     problem_solving: str = Field(description="단계별 구체적인 문제 풀이 방법")
     solution_code: SolutionCode = Field(description="python, c++, java 정답 코드")

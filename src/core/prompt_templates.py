@@ -6,7 +6,7 @@ SOLUTION_PROMPT = PromptTemplate(
     아래 백준 문제 정보를 바탕으로, 출력 순서에 따라 **JSON 형식**으로만 해설을 작성하세요.
 
     출력 순서는 다음과 같습니다.
-    1. problem_number(문제 번호)
+    1. problemNumber(문제 번호)
     2. problem_check(문제 개요 및 알고리즘 설명)
     3. problem_solving(단계별 구체적인 풀이 방법. 구체적일수록 좋음)
     4. solution_code(정답 코드를 python, c++, java로 각각 작성)

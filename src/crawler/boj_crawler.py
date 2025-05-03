@@ -34,7 +34,7 @@ def login_with_cookies(driver):
     })
     driver.add_cookie({
         'name': 'bojautologin',
-        'value': os.getenv("BOJ_COOKIE_AUTLOGIN"),
+        'value': os.getenv("BOJ_COOKIE_AUTOLOGIN"),
         'domain': '.acmicpc.net',
         'path': '/',
         'httpOnly': True,
