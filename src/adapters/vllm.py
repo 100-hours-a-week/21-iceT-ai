@@ -10,9 +10,9 @@
 
 
 from langchain_community.llms import VLLMOpenAI
-from config import settings
+from src.config import settings
 from dotenv import load_dotenv
-from models.solution_schema import SolutionResponse
+from src.schemas.solution_schema import SolutionResponse
 
 load_dotenv()
 
