@@ -31,6 +31,6 @@ vllm_llm = VLLMOpenAI(
 structured_llm = vllm_llm.with_structured_output(SolutionResponse)
 
 def generate_solution(prompt: str) -> SolutionResponse:
-    result = structured_llm.invoke(prompt)
+    result = structured_llm.ainvoke(prompt)
     return result
 
