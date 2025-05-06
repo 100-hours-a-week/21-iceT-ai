@@ -18,7 +18,7 @@ add_exception_handlers(app)
 # API v1 라우터 등록
 app.include_router(
     solution_router,
-    prefix="/api/v1",
+    prefix="/api/ai/v1",
     tags=["해설지 생성 기능"],
 )
 

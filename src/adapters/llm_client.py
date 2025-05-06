@@ -17,6 +17,6 @@ llm = ChatOpenAI(
 structured_llm = llm.with_structured_output(SolutionResponse)
 
 # 프롬프트 모델에 전달하고 구조화된 응답 반환
-def generate_solution(prompt: str) -> SolutionResponse:
-    response = structured_llm.invoke(prompt)
+async def generate_solution(prompt: str) -> SolutionResponse:
+    response = await structured_llm.ainvoke(prompt)
     return response
