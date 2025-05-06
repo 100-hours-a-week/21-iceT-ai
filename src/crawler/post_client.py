@@ -3,9 +3,8 @@
 import requests
 from src.schemas.solution_schema import SolutionResponse
 
-# TODO: URL 백앤드로 변경
 def post_to_backend(problem_id: int, response: SolutionResponse):
-    url = "http://localhost:8080/api/solution/save"
+    url = "http://localhost:8080/api/v1/solution"
     headers = {"Content-Type": "application/json"}
 
     res = requests.post(url, json=response.model_dump(), headers=headers)
