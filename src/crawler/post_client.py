@@ -4,7 +4,7 @@ import requests
 from src.schemas.solution_schema import SolutionResponse
 
 def post_to_backend(problem_id: int, response: SolutionResponse):
-    url = "http://localhost:8080/api/backend/v1/solution"
+    url = "http://ktbKoco.com/api/backend/v1/solution"
     headers = {"Content-Type": "application/json"}
 
     res = requests.post(url, json=response.model_dump(), headers=headers)
