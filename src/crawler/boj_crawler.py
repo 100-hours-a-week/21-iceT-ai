@@ -17,7 +17,7 @@ def create_driver():
     options.add_argument("--no-sandbox")
     options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
 
-    service = Service("/Users/junsu/Downloads/chromedriver-mac-arm64/chromedriver")
+    service = Service("")
     driver = webdriver.Chrome(service=service, options=options)
     return driver
 
