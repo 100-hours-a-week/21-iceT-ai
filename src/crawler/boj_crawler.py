@@ -12,12 +12,13 @@ load_dotenv()
 # Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
+    options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
 
-    service = Service("")
+    service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
     return driver
 
