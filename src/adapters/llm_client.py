@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
-from config import settings
+from src.config import settings
 from dotenv import load_dotenv
-from models.solution_schema import SolutionResponse
+from src.schemas.solution_schema import SolutionResponse
 
 # 환경변수 로드
 load_dotenv()
@@ -13,11 +13,10 @@ llm = ChatOpenAI(
     max_tokens=settings.max_tokens,
 )
 
+# LLM의 응답을 Pydantic 모델로 구조화하기 위한 래퍼
 structured_llm = llm.with_structured_output(SolutionResponse)
 
-def generate_solution(prompt: str) -> SolutionResponse:
-    """
-    LangChain LLM 클라이언트를 사용하여 솔루션 생성
-    """
-    response = structured_llm.invoke(prompt)
+# 프롬프트 모델에 전달하고 구조화된 응답 반환
+async def generate_solution(prompt: str) -> SolutionResponse:
+    response = await structured_llm.ainvoke(prompt)
     return response
