@@ -32,5 +32,11 @@ class InterviewEndRequest(BaseModel):
     messages: List[Message]
     session_id: str
 
+# ✅ 새로 추가된 구조화된 총평 스키마
+class InterviewReview(BaseModel):
+    good: List[str]
+    bad: List[str]
+    improvement: List[str]
+
 class InterviewEndResponse(BaseModel):
-    review: str
+    review: InterviewReview

@@ -3,21 +3,21 @@ from langchain_core.prompts import PromptTemplate
 # ✅ 해설 프롬프트 (LangChain용 structured output)
 SOLUTION_PROMPT = PromptTemplate(
     template="""
-    아래 백준 문제 정보를 바탕으로, 출력 순서에 따라 **JSON 형식**으로만 해설을 작성하세요.
+아래 백준 문제 정보를 바탕으로, 출력 순서에 따라 **JSON 형식**으로만 해설을 작성하세요.
 
-    출력 순서는 다음과 같습니다.
-    1. problemNumber(문제 번호)
-    2. problem_check(문제 개요 및 알고리즘 설명)
-    3. problem_solving(단계별 구체적인 풀이 방법. 구체적일수록 좋음)
-    4. solution_code(정답 코드를 python, c++, java로 각각 작성)
+출력 순서는 다음과 같습니다.
+1. problemNumber(문제 번호)
+2. problem_check(문제 개요 및 알고리즘 설명)
+3. problem_solving(단계별 구체적인 풀이 방법. 구체적일수록 좋음)
+4. solution_code(정답 코드를 python, c++, java로 각각 작성)
 
-    문제 번호   : {problem_number}
-    제목       : {title}
-    설명       : {description}
-    입력       : {input}
-    출력       : {output}
-    입력 예시   : {input_example}
-    출력 예시   : {output_example}
+문제 번호   : {problem_number}
+제목       : {title}
+설명       : {description}
+입력       : {input}
+출력       : {output}
+입력 예시   : {input_example}
+출력 예시   : {output_example}
     """,
     input_variables=[
         "problem_number",
@@ -33,21 +33,22 @@ SOLUTION_PROMPT = PromptTemplate(
 # ✅ 코드 피드백 프롬프트
 FEEDBACK_PROMPT = PromptTemplate(
     template="""
-아래 문제 설명과 코드에 대해 피드백을 JSON 형식으로 작성하세요.
+당신은 코드 리뷰어입니다. 아래 문제 설명과 사용자 코드를 보고 다음 항목을 **반드시 JSON 형식으로만** 출력하세요:
 
-- 출력 형식은 반드시 다음과 같아야 합니다:
-    ### 잘한점
-    - 항목1
-    - 항목2
+1. 잘한 점 2가지 (good)
+2. 개선할 점 2가지 (bad)
+3. 개선된 코드 (improved_code)
 
-    ### 개선해야 할 점
-    - 항목1
-    - 항목2
+형식 예시는 다음과 같습니다:
 
-    ### 개선된 코드
-    `코드블럭`
+{
+  "title": "문제 제목",
+  "good": ["잘한 점 1", "잘한 점 2"],
+  "bad": ["개선할 점 1", "개선할 점 2"],
+  "improved_code": "여기에 전체 수정된 코드 문자열"
+}
 
-- 추가 설명은 절대 포함하지 마세요.
+추가 설명, 마크다운, 문장 등은 절대 포함하지 마세요. 정확한 JSON만 출력하세요.
 
 문제 제목: {title}
 문제 번호: {number}

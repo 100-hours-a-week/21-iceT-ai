@@ -1,17 +1,17 @@
 from src.schemas.chat_schema import FeedbackChatRequest, FeedbackChatResponse
 from src.adapters.llm_selector import llm
-from src.core.prompt_templates import FEEDBACK_CHAT_PROMPT
 
 async def handle_feedback_chat(req: FeedbackChatRequest) -> FeedbackChatResponse:
-    history = ""
-    for m in req.messages[:-1]:
-        role = "사용자" if m.role == "user" else "AI"
-        history += f"{role}: {m.content}\n"
-    
-    user_input = req.messages[-1].content
-    prompt = FEEDBACK_CHAT_PROMPT.format(history=history, user_input=user_input)
+    # 1. 기존 메시지 변환 (Pydantic → ChatML 포맷)
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
 
-    # invoke는 OpenAI, vLLM 모두 공통으로 사용 가능
-    answer = llm.invoke(prompt)
+    # 2. ChatML system role 추가 (Qwen에게 역할 부여)
+    messages.insert(0, {
+        "role": "system",
+        "content": "You are a friendly and helpful AI assistant specialized in code feedback. Be concise, clear, and supportive."
+    })
 
-    return FeedbackChatResponse(session_id=req.session_id, answer=answer)
+    # 3. LLM 호출 (vLLM 서버를 통해 Qwen으로)
+    answer = llm.invoke(messages)
+
+    return FeedbackChatResponse(session_id=req.session_id, answer=answer.strip())
