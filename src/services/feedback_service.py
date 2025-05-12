@@ -1,10 +1,10 @@
-import json
 from src.adapters.vllm import generate
 from src.schemas.feedback_schema import (
     FeedbackRequest, FeedbackResponse,
     FeedbackAnswerRequest, FeedbackAnswerResponse
 )
 from src.core.prompt_templates import FEEDBACK_PROMPT
+from src.core.llm_utils import parse_feedback_response  # ✅ 추가
 
 # 1. /feedback/start: 코드 피드백 생성
 async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
@@ -18,16 +18,8 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
 
     raw_output = generate(messages)
 
-    try:
-        parsed = json.loads(raw_output)
-        return FeedbackResponse(
-            title=req.title,
-            good=parsed["good"],
-            bad=parsed["bad"],
-            improved_code=parsed["improved_code"]
-        )
-    except Exception as e:
-        raise ValueError(f"❌ LLM 응답 파싱 실패: {e}\n\n[출력 원문]:\n{raw_output}")
+    # ✅ 마크다운 제거 및 robust JSON 파싱
+    return parse_feedback_response(raw_output, title=req.title)
 
 # 2. /feedback/answer: 챗봇 자유 응답
 async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswerResponse:

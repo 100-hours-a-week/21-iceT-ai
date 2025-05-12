@@ -2,8 +2,13 @@ from pydantic import BaseModel
 from typing import List
 
 class FeedbackRequest(BaseModel):
-    title: str
+    title: str  # 원래 있던 필드 (모델이 생성하게 할 수도 있음)
     description: str
+    input_rule: str
+    output_rule: str
+    sample_input: str
+    sample_output: str
+    code_language: str
     code: str
 
 class FeedbackResponse(BaseModel):
