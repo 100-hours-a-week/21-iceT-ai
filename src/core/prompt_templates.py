@@ -1,54 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 
-<<<<<<< HEAD
-SOLUTION_PROMPT = """
-너는 코드 문제를 해설해주는 AI야. 아래 정보를 바탕으로 다음 4가지 항목을 출력해줘.
-
-1. 문제 확인 (문제에서 반드시 지켜야 하는 핵심 조건을 정리)
-2. 문제 해결 (이 문제를 해결하기 위한 핵심 알고리즘 설명)
-3. 코멘트 (현재 사용자의 코드가 문제를 해결하고 있는지에 대한 피드백)
-4. 정답 코드 (선택한 언어 기준으로 정답이 되는 코드)
-
-다음 형식에 맞춰 출력해줘:
-
-문제 확인:
-...
-
-문제 해결:
-...
-
-코멘트:
-...
-
-정답 코드:
-```
-{code_language}
-```{
-...
-문제 제목: {title}
-문제 설명: {description}
-입력 조건: {input_rule}
-출력 조건: {output_rule}
-입력 예시: {sample_input}
-출력 예시: {sample_output}
-사용자 코드:
-{code}
-"""
-
-FEEDBACK_PROMPT = PromptTemplate(
-    template="""
-아래 문제 설명과 코드에 대해 피드백을 JSON 형식으로 작성하세요.
-
-- 출력 형식은 반드시 다음과 같아야 합니다:
-    ### 잘한점
-    - 항목1
-    - 항목2
-
-    ### 개선해야 할 점
-    - 항목1
-    - 항목2
-=======
-# 백준 문제 정보를 기반으로 해설을 생성하는 프롬프트 템플릿
+# ✅ 해설 프롬프트 (LangChain용 structured output)
 SOLUTION_PROMPT = PromptTemplate(
     template="""
     아래 백준 문제 정보를 바탕으로, 출력 순서에 따라 **JSON 형식**으로만 해설을 작성하세요.
@@ -66,7 +18,31 @@ SOLUTION_PROMPT = PromptTemplate(
     출력       : {output}
     입력 예시   : {input_example}
     출력 예시   : {output_example}
->>>>>>> origin/dev
+    """,
+    input_variables=[
+        "problem_number",
+        "title",
+        "description",
+        "input",
+        "output",
+        "input_example",
+        "output_example",
+    ],
+)
+
+# ✅ 코드 피드백 프롬프트
+FEEDBACK_PROMPT = PromptTemplate(
+    template="""
+아래 문제 설명과 코드에 대해 피드백을 JSON 형식으로 작성하세요.
+
+- 출력 형식은 반드시 다음과 같아야 합니다:
+    ### 잘한점
+    - 항목1
+    - 항목2
+
+    ### 개선해야 할 점
+    - 항목1
+    - 항목2
 
     ### 개선된 코드
     `코드블럭`
@@ -85,23 +61,19 @@ SOLUTION_PROMPT = PromptTemplate(
 {code}
 """,
     input_variables=[
-<<<<<<< HEAD
-        "title", "number", "description",
-        "input_rule", "output_rule",
-        "sample_input", "sample_output",
-        "code", "code_language"
-=======
-    "problem_number",
-    "title",
-    "description",
-    "input",
-    "output",
-    "input_example",
-    "output_example",
->>>>>>> origin/dev
+        "title",
+        "number",
+        "description",
+        "input_rule",
+        "output_rule",
+        "sample_input",
+        "sample_output",
+        "code",
+        "code_language",
     ],
 )
 
+# ✅ 자유 피드백 대화 프롬프트
 FEEDBACK_CHAT_PROMPT = """
 너는 사용자의 코드와 문제에 대해 피드백을 주고받는 친절한 챗봇이야.
 지금까지의 대화를 참고해 적절하게 응답해줘.
@@ -112,6 +84,7 @@ FEEDBACK_CHAT_PROMPT = """
 AI:
 """.strip()
 
+# ✅ 모의 면접 - 첫 질문 프롬프트
 INTERVIEW_START_PROMPT = PromptTemplate(
     template="""
 너는 코딩 테스트를 기반으로 한 모의 면접관이야.
@@ -134,13 +107,19 @@ INTERVIEW_START_PROMPT = PromptTemplate(
 {code}
 """,
     input_variables=[
-        "title", "number", "description",
-        "input_rule", "output_rule",
-        "sample_input", "sample_output",
-        "code", "code_language"
+        "title",
+        "number",
+        "description",
+        "input_rule",
+        "output_rule",
+        "sample_input",
+        "sample_output",
+        "code",
+        "code_language"
     ]
 )
 
+# ✅ 모의 면접 - 꼬리 질문 프롬프트
 INTERVIEW_FOLLOWUP_PROMPT = """
 너는 면접관이야. 아래는 지금까지의 면접 대화야.
 가장 마지막 답변을 바탕으로, 다음 면접 질문을 하나만 작성해줘.
@@ -153,24 +132,18 @@ INTERVIEW_FOLLOWUP_PROMPT = """
 {history}
 """.strip()
 
+# ✅ 모의 면접 - 총평 프롬프트
 INTERVIEW_REVIEW_PROMPT = """
-너는 면접관이야. 지금까지의 면접 대화를 읽고 총평을 작성해줘.
+다음은 면접관과 지원자의 대화입니다:
 
-조건:
-- 출력 형식은 반드시 다음과 같아야 해:
-
-###잘한점-
-- 항목1
-- 항목2
-
-###아쉬운 점-
-- 항목1
-- 항목2
-
-###개선 방향성-
-- 항목1
-- 항목2
-
-면접 대화:
 {history}
+
+이 면접 내용을 평가해서 아래 JSON 형식에 맞춰 응답하세요.
+정확한 JSON 구조를 따르고, 불필요한 문장이나 마크다운 없이 순수한 JSON만 출력하세요.
+
+{
+"good": ["지원자의 강점 1", "지원자의 강점 2"],
+"bad": ["지원자의 약점 1", "지원자의 약점 2"],
+"improvement": ["지원자가 개선해야 할 점 1", "개선해야 할 점 2"]
+}
 """.strip()
