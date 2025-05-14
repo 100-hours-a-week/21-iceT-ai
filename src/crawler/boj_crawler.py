@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Selenium Chrome 드라이버 생성 함수
+# TODO: 이후 서버에서 직접 실행할 수 있도록 변경 필요 (agent, 크롬드라이버 주소, webdriver 탐지 우회 등)
 def create_driver():
     options = Options()
     # options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
