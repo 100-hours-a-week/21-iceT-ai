@@ -4,21 +4,14 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
 
-GROUP_URL = "https://www.acmicpc.net/group/workbook/23318"
-# TODO: 이후에 23567로 변경해야 함
-# "https://www.acmicpc.net/group/workbook/23567"
+GROUP_URL = "https://www.acmicpc.net/group/workbook/23567"
 
 # 가장 최근 날짜의 문제집 ID를 가져오는 함수
 def get_today_workbook_id(driver) -> int:
     driver.get(GROUP_URL)
     try:
-        rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
-        # TODO: 이후 아래 코드로 변경 필요
-        #row = driver.find_element(By.CSS_SELECTOR, "table tbody tr")
-        
-        # TODO: 23부터 다시 해야 함, 이후 아래 코드로 변경 필요
-        link = rows[22].find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
-        # link = row.find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
+        row = driver.find_element(By.CSS_SELECTOR, "table tbody tr")       
+        link = row.find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
         href = link.get_attribute("href")  
         return int(href.split("/")[-1])
     except NoSuchElementException:

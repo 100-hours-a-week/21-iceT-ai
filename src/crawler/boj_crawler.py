@@ -10,30 +10,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Selenium Chrome 드라이버 생성 함수
-# TODO: 이후 서버에서 직접 실행할 수 있도록 변경 필요 (agent, 크롬드라이버 주소, webdriver 탐지 우회 등)
 def create_driver():
     options = Options()
-    # options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
+    options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
-    # options.add_argument("--window-size=1920,1080")
-    options.add_argument(f"user-agent={random.choice(USER_AGENTS)}")
-    # options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    #                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-    #                      "Chrome/115.0.0.0 Safari/537.36")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                         "AppleWebKit/537.36 (KHTML, like Gecko) "
+                         "Chrome/115.0.0.0 Safari/537.36")
 
-    service = Service("/Users/junsu/Downloads/chromedriver-mac-arm64/chromedriver")
-    # service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
+    service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
-    # WebDriver 탐지 우회
-    #driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-    #    "source": """
-    #        Object.defineProperty(navigator, 'webdriver', {
-    #            get: () => undefined
-    #        })
-    #    """
-    #})
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+       "source": """
+           Object.defineProperty(navigator, 'webdriver', {
+               get: () => undefined
+           })
+       """
+    })
     return driver
 
 # 로그인 쿠키 추가 함수
@@ -55,15 +51,7 @@ def login_with_cookies(driver):
         'httpOnly': True,
         'secure': True
     })
-    # driver.get("https://www.acmicpc.net/")
-
-# TODO: 서버 올릴때 지워야 함
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Mobile/15E148 Safari/604.1"
-]
+    driver.get("https://www.acmicpc.net/")
 
 # 백준 문제를 크롤링하는 함수
 def crawl_boj_problem_with_selenium(driver, problem_id):
