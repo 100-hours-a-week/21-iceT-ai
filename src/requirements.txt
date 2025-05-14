@@ -9,7 +9,11 @@ pydantic-settings==2.6.1
 
 langchain==0.3.24
 langchain-openai==0.3.7
-langchain-ollama==0.3.0
+# langchain-ollama==0.3.0
 langchain-community==0.3.23
 
-vllm==0.8.5
+# vllm==0.8.5
+
+# Selenium for web scraping
+selenium==4.31.0
+beautifulsoup4==4.12.3
