@@ -1,5 +1,5 @@
 # TODO: 스크립트 분리 및 OS 스케쥴러 적용
-
+# TODO: 실행 파일 (매일 아침 10시에 실행)
 
 ##################################################################################
 # 서버 실행을 위한 메인 함수
@@ -47,8 +47,7 @@ from src.core.logger import setup_logging
 setup_logging()
 
 if __name__ == "__main__":
-    GROUP_ID = 23318
-    # GROUP_ID = 23567
+    GROUP_ID = 23567
     driver = create_driver()
 
     try:
