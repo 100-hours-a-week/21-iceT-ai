@@ -8,7 +8,7 @@ load_dotenv()
 class Settings(BaseSettings):
     model: str = "gpt-4o-mini"
     temperature: float = 0.3
-    max_tokens: int = 4096
+    max_tokens: int = 8192
 
 settings = Settings() 
 
