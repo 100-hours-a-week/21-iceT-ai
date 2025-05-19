@@ -18,7 +18,7 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
         req.description,
         k=5,                              # top-k 제한
     )
-    context = "\n\n".join(d.page_content[:1000] for d in docs)  # 길이 제한
+    context = "\n\n".join(d.page_content[:500] for d in docs)  # 길이 제한
 
     # 프롬프트 템플릿에 문제 정보 삽입
     prompt = SOLUTION_PROMPT.invoke(
