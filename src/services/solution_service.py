@@ -1,5 +1,5 @@
 from src.core.prompt_templates import SOLUTION_PROMPT
-from src.adapters.llm_selector import llm
+from src.adapters.vllm import llm
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.core.llm_utils import parse_solution_response  # ✅ 추가
 

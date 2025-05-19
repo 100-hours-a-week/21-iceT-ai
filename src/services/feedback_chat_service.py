@@ -1,5 +1,5 @@
 from src.schemas.chat_schema import FeedbackChatRequest, FeedbackChatResponse
-from src.adapters.llm_selector import llm
+from src.adapters.vllm import llm
 
 async def handle_feedback_chat(req: FeedbackChatRequest) -> FeedbackChatResponse:
     # 1. 기존 메시지 변환 (Pydantic → ChatML 포맷)
