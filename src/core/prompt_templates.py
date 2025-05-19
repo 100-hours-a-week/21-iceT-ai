@@ -1,6 +1,7 @@
-# ✅ 해설 프롬프트 (LangChain용 structured output)
-SOLUTION_PROMPT = PromptTemplate(
-    template="""
+# src/core/prompt_templates.py
+
+# ✅ 문제 해설 프롬프트
+SOLUTION_PROMPT = """
 다음 문제 정보를 바탕으로 문제 해설을 작성하세요.
 응답은 반드시 아래 JSON 예시와 **정확히 같은 키 이름과 타입**을 따르세요.
 내용은 한국어나 영어로 작성하고 절대 중국어를 포함하지 마세요.
@@ -28,16 +29,14 @@ SOLUTION_PROMPT = PromptTemplate(
 출력       : {output}
 입력 예시   : {input_example}
 출력 예시   : {output_example}
-""",
-    input_variables=[
-        "problem_number", "title", "description",
-        "input", "output", "input_example", "output_example"
-    ]
-)
+"""
+
+def format_solution_prompt(data: dict) -> str:
+    return SOLUTION_PROMPT.format(**data)
+
 
 # ✅ 코드 피드백 프롬프트
-FEEDBACK_PROMPT = PromptTemplate(
-    template="""
+FEEDBACK_PROMPT = """
 당신은 코드 리뷰어입니다. 아래 문제 설명과 사용자 코드를 보고 다음 항목을 **반드시 JSON 형식으로만** 출력하세요:
 
 1. 문제의 요지를 요약한 문장형 제목 (title)
@@ -66,14 +65,12 @@ FEEDBACK_PROMPT = PromptTemplate(
 
 사용자 코드 ({code_language}):
 {code}
-""",
-    input_variables=[
-        "title", "description", "input_rule", "output_rule",
-        "sample_input", "sample_output", "code", "code_language"
-    ]
-)
+"""
 
-# ✅ 자유 피드백 대화 프롬프트
+def format_feedback_prompt(data: dict) -> str:
+    return FEEDBACK_PROMPT.format(**data)
+
+
 FEEDBACK_CHAT_PROMPT = """
 너는 사용자의 코드와 문제에 대해 피드백을 주고받는 친절한 챗봇이야.
 지금까지의 대화를 참고해 적절하게 응답해줘.
@@ -84,9 +81,18 @@ FEEDBACK_CHAT_PROMPT = """
 AI:
 """.strip()
 
-# ✅ 모의 면접 - 첫 질문 프롬프트
-INTERVIEW_START_PROMPT = PromptTemplate(
-    template="""
+def format_feedback_chat_prompt(history: list[dict], user_input: str) -> str:
+    # ChatML history → 텍스트로 변환
+    history_text = ""
+    for msg in history:
+        prefix = "사용자" if msg["role"] == "user" else "AI"
+        history_text += f"{prefix}: {msg['content']}\n"
+
+    return FEEDBACK_CHAT_PROMPT.format(history=history_text.strip(), user_input=user_input.strip())
+
+
+# ✅ 모의 면접 - 첫 질문
+INTERVIEW_START_PROMPT = """
 너는 코딩 테스트를 기반으로 한 모의 면접관이야.
 아래 문제 정보와 코드 내용을 바탕으로, 첫 면접 질문을 하나 작성해줘.
 
@@ -110,50 +116,7 @@ INTERVIEW_START_PROMPT = PromptTemplate(
 
 사용자 코드 ({code_language}):
 {code}
-""",
-    input_variables=[
-        "title",
-        "number",
-        "description",
-        "input_rule",
-        "output_rule",
-        "sample_input",
-        "sample_output",
-        "code",
-        "code_language"
-    ]
-)
+"""
 
-# ✅ 모의 면접 - 꼬리 질문 프롬프트
-INTERVIEW_FOLLOWUP_PROMPT = """
-너는 모의 기술 면접관이야. 아래는 지금까지의 면접 대화야.
-가장 마지막 답변을 바탕으로, 다음 면접 질문을 하나만 작성해줘.
-
-조건:
-
-질문은 하나만
-
-여는 말이나 맺는 말 없이, 문장 하나만 출력
-
-질문은 반드시 한국어나 영어로 작성하고, 절대 중국어를 포함하지 마세요
-
-면접 대화:
-{history}
-""".strip()
-
-# ✅ 모의 면접 - 총평 프롬프트
-INTERVIEW_REVIEW_PROMPT = """
-다음은 면접관과 지원자의 대화입니다:
-
-{history}
-
-이 면접 내용을 평가해서 아래 JSON 형식에 맞춰 응답하세요.
-정확한 JSON 구조를 따르고, 불필요한 문장이나 마크다운 없이 순수한 JSON만 출력하세요.
-응답은 반드시 한국어나 영어로 작성되어야 하며, 절대 중국어를 포함하지 마세요.
-
-{
-    "good": ["지원자의 강점 1", "지원자의 강점 2"],
-    "bad": ["지원자의 약점 1", "지원자의 약점 2"],
-    "improvement": ["지원자가 개선해야 할 점 1", "개선해야 할 점 2"]
-}
-""".strip()
+def format_interview_start_prompt(data: dict) -> str:
+    return INTERVIEW_START_PROMPT.format(**data)
