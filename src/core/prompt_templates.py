@@ -1,5 +1,3 @@
-from langchain_core.prompts import PromptTemplate
-
 # ✅ 해설 프롬프트 (LangChain용 structured output)
 SOLUTION_PROMPT = PromptTemplate(
     template="""
