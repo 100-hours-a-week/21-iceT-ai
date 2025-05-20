@@ -8,19 +8,19 @@ SOLUTION_PROMPT = """
 마크다운이나 설명은 포함하지 마세요.
 
 예시:
-{
+{{
   "problemNumber": 1000,
-  "problem_check": {
+  "problem_check": {{
     "problem_description": "문제 개요를 여기에 작성",
     "algorithm": "사용된 알고리즘 또는 접근법"
-  },
+  }},
   "problem_solving": "문제 풀이 단계를 서술하는 문자열",
-  "solution_code": {
+  "solution_code": {{
     "python": "파이썬 코드 문자열",
     "cpp": "C++ 코드 문자열",
     "java": "Java 코드 문자열"
-  }
-}
+  }}
+}}
 
 문제 번호   : {problem_number}
 제목       : {title}
@@ -46,12 +46,12 @@ FEEDBACK_PROMPT = """
 
 출력 예시는 다음과 같아야 합니다:
 
-{
+{{
   "title": "반복문에서 변수 재사용 오류",
   "good": ["코드 구조가 간결합니다.", "입력 처리를 적절히 했습니다."],
   "bad": ["정수 변환이 누락되었습니다.", "입력 검증이 없습니다."],
   "improved_code": "수정된 전체 코드 문자열"
-}
+}}
 
 응답은 반드시 한국어나 영어로 작성해야 하며, 절대 중국어를 포함하지 마세요.
 추가 설명, 마크다운, 문장 등은 절대 포함하지 마세요. 정확한 JSON만 출력하세요.

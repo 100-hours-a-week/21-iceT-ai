@@ -10,7 +10,17 @@ from src.core.llm_utils import parse_feedback_response
 
 # 1. /feedback: 코드 피드백 생성
 async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
-    prompt = format_feedback_prompt(req.model_dump())
+    try:
+        data = req.model_dump()
+    except Exception as e:
+        print("❌ model_dump 실패:", e)
+        raise
+
+    try:
+        prompt = format_feedback_prompt(data)
+    except Exception as e:
+        print("❌ 프롬프트 포맷 실패:", e)
+        raise
 
     messages = [
         {"role": "system", "content": "You are a professional code reviewer. Always respond in correct JSON."},
@@ -18,7 +28,8 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
     ]
 
     raw_output = await generate(messages)
-    return parse_feedback_response(raw_output, title=req.title)
+    return parse_feedback_response(raw_output, title=data.get("title", "제목 없음"))
+
 
 # 2. /feedback/answer: 챗봇 자유 응답
 async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswerResponse:
