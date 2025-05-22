@@ -13,11 +13,7 @@ retriever = load_vectorstore().as_retriever()
 # 문제 요청을 기반으로 해설 생성하는 서비스 함수
 async def explain_solution(req: SolutionRequest) -> SolutionResponse:
     # 문제 설명 기반으로 관련 문서 검색
-    docs = await anyio.to_thread.run_sync(
-        retriever.get_relevant_documents,
-        req.description,
-        k=5,                              # top-k 제한
-    )
+    docs = await retriever.ainvoke(req.description)
     context = "\n\n".join(d.page_content[:500] for d in docs)  # 길이 제한
 
     # 프롬프트 템플릿에 문제 정보 삽입
