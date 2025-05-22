@@ -1,5 +1,5 @@
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
+from langchain.text_splitter import MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import FAISS
 from src.core.embedding_model import get_embedder
 import os, logging
@@ -35,12 +35,6 @@ for doc in docs:
     for chunk in partial_chunks:
         chunk.metadata.update(doc.metadata)  # 원본 메타데이터 보존
         chunks.append(chunk)
-
-# splitter = RecursiveCharacterTextSplitter(
-#     chunk_size=500,
-#     chunk_overlap=100,
-# )
-# chunks = splitter.split_documents(docs)
 
 # 3. 벡터스토어 생성
 embedder = get_embedder()
