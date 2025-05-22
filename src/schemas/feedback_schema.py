@@ -1,30 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 
 class FeedbackRequest(BaseModel):
-    title: str  # 원래 있던 필드 (모델이 생성하게 할 수도 있음)
-    description: str
-    input_rule: str
-    output_rule: str
-    sample_input: str
-    sample_output: str
-    code_language: str
-    code: str
+    problemNumber: int = Field(description="문제 번호")
+    title: str = Field(description="문제 제목")
+    description: str = Field(description="문제 설명")
+    inputRule: str = Field(description="입력 조건 설명")
+    outputRule: str = Field(description="출력 조건 설명")
+    intputExample: str = Field(description="입력 예시")
+    outputExample: str = Field(description="출력 예시")
+    codeLanguage: str = Field(description="프로그래밍 언어 (예: python, cpp, java)")
+    code: str = Field(description="사용자 제출 코드")
 
 class FeedbackResponse(BaseModel):
-    title: str
-    good: List[str]
-    bad: List[str]
-    improved_code: str
+    problemNumber: int = Field(description="문제 번호")
+    title: str = Field(description="문제 제목")
+    good: List[str] = Field(description="코드에서 잘한 점")
+    bad: List[str] = Field(description="코드에서 개선할 점")
+    improvedCode: str = Field(description="AI가 제안한 개선된 코드")
 
 class Message(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
+    role: str = Field(description='"user" 또는 "assistant"')
+    content: str = Field(description="메시지 내용")
 
 class FeedbackAnswerRequest(BaseModel):
-    session_id: str
-    messages: List[Message]
+    sessionId: str = Field(description="챗 세션 ID")
+    messages: List[Message] = Field(description="이전 대화 이력")
 
 class FeedbackAnswerResponse(BaseModel):
-    session_id: str
-    answer: str
+    sessionId: str = Field(description="챗 세션 ID")
+    answer: str = Field(description="AI 응답 메시지")
+

@@ -31,7 +31,7 @@ async def generate_followup_question(req: InterviewAnswerRequest) -> InterviewAn
     })
 
     output = await generate(chatml_history)
-    return InterviewAnswerResponse(session_id=req.session_id, question=output.strip())
+    return InterviewAnswerResponse(sessionId=req.sessionId, question=output.strip())
 
 # 3. 면접 총평 생성
 async def generate_interview_review(req: InterviewEndRequest) -> InterviewEndResponse:

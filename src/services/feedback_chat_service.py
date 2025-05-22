@@ -14,4 +14,4 @@ async def handle_feedback_chat(req: FeedbackChatRequest) -> FeedbackChatResponse
     # 비동기 호출
     answer = await generate(messages)
 
-    return FeedbackChatResponse(session_id=req.session_id, answer=answer.strip())
+    return FeedbackChatResponse(sessionId=req.sessionId, answer=answer.strip())

@@ -12,6 +12,8 @@ from src.schemas.feedback_schema import FeedbackResponse
 
 def parse_json_from_llm_output(raw_output: str) -> dict:
     """LLM 출력에서 마크다운 제거 및 JSON 파싱 (이중 파싱 포함)"""
+    print("✅ [DEBUG] 파싱 대상 원문:\n", raw_output)
+
     cleaned = re.sub(r"^```json\s*|\s*```$", "", raw_output.strip())
 
     try:

@@ -12,3 +12,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+print("✅ [CONFIG] Loaded vllm_url:", settings.vllm_url)

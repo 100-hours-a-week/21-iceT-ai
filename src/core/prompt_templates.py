@@ -10,25 +10,25 @@ SOLUTION_PROMPT = """
 예시:
 {{
   "problemNumber": 1000,
-  "problem_check": {{
-    "problem_description": "문제 개요를 여기에 작성",
+  "problemCheck": {{
+    "problemDescription": "문제 개요를 여기에 작성",
     "algorithm": "사용된 알고리즘 또는 접근법"
   }},
-  "problem_solving": "문제 풀이 단계를 서술하는 문자열",
-  "solution_code": {{
+  "problemSolving": "문제 풀이 단계를 서술하는 문자열",
+  "solutionCode": {{
     "python": "파이썬 코드 문자열",
     "cpp": "C++ 코드 문자열",
     "java": "Java 코드 문자열"
   }}
 }}
 
-문제 번호   : {problem_number}
+문제 번호   : {problemNumber}
 제목       : {title}
 설명       : {description}
 입력       : {input}
 출력       : {output}
-입력 예시   : {input_example}
-출력 예시   : {output_example}
+입력 예시   : {inputExample}
+출력 예시   : {outputExample}
 """
 
 def format_solution_prompt(data: dict) -> str:
@@ -42,28 +42,28 @@ FEEDBACK_PROMPT = """
 1. 문제의 요지를 요약한 문장형 제목 (title)
 2. 잘한 점 2가지 (good)
 3. 개선할 점 2가지 (bad)
-4. 개선된 코드 (improved_code)
+4. 개선된 코드 (improvedCode)
 
 출력 예시는 다음과 같아야 합니다:
 
-{{
+{
   "title": "반복문에서 변수 재사용 오류",
   "good": ["코드 구조가 간결합니다.", "입력 처리를 적절히 했습니다."],
   "bad": ["정수 변환이 누락되었습니다.", "입력 검증이 없습니다."],
-  "improved_code": "수정된 전체 코드 문자열"
-}}
+  "improvedCode": "수정된 전체 코드 문자열"
+}
 
 응답은 반드시 한국어나 영어로 작성해야 하며, 절대 중국어를 포함하지 마세요.
 추가 설명, 마크다운, 문장 등은 절대 포함하지 마세요. 정확한 JSON만 출력하세요.
 
 문제 제목: {title}
 문제 설명: {description}
-입력 조건: {input_rule}
-출력 조건: {output_rule}
-입력 예시: {sample_input}
-출력 예시: {sample_output}
+입력 조건: {inputRule}
+출력 조건: {outputRule}
+입력 예시: {inputExample}
+출력 예시: {outputExample}
 
-사용자 코드 ({code_language}):
+사용자 코드 ({codeLanguage}):
 {code}
 """
 
@@ -109,12 +109,12 @@ INTERVIEW_START_PROMPT = """
 문제 제목: {title}
 문제 번호: {number}
 문제 설명: {description}
-입력 조건: {input_rule}
-출력 조건: {output_rule}
-입력 예시: {sample_input}
-출력 예시: {sample_output}
+입력 조건: {inputRule}
+출력 조건: {outputRule}
+입력 예시: {inputExample}
+출력 예시: {outputExample}
 
-사용자 코드 ({code_language}):
+사용자 코드 ({codeLanguage}):
 {code}
 """
 
