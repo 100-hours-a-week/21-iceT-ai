@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class FeedbackRequest(BaseModel):
     problemNumber: int = Field(description="문제 번호")
@@ -13,6 +13,7 @@ class FeedbackRequest(BaseModel):
     code: str = Field(description="사용자 제출 코드")
 
 class FeedbackResponse(BaseModel):
+    sessionId: str = Field(description="챗 세션 ID")
     problemNumber: int = Field(description="문제 번호")
     title: str = Field(description="문제 제목")
     good: List[str] = Field(description="코드에서 잘한 점")
@@ -24,8 +25,9 @@ class Message(BaseModel):
     content: str = Field(description="메시지 내용")
 
 class FeedbackAnswerRequest(BaseModel):
-    sessionId: str = Field(description="챗 세션 ID")
-    messages: List[Message] = Field(description="이전 대화 이력")
+    sessionId: str
+    messages: List[Message]
+    summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
 
 class FeedbackAnswerResponse(BaseModel):
     sessionId: str = Field(description="챗 세션 ID")

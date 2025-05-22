@@ -6,7 +6,7 @@ from src.schemas.feedback_schema import (
     FeedbackAnswerRequest, FeedbackAnswerResponse
 )
 from src.core.prompt_templates import format_feedback_prompt
-from src.core.llm_utils import parse_feedback_response
+from src.core.llm_utils import parse_feedback_response, build_prompt_from_memory
 
 # 1. /feedback: 코드 피드백 생성
 async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
@@ -33,15 +33,14 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
 
 # 2. /feedback/answer: 챗봇 자유 응답
 async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswerResponse:
-    messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    if not any(m.role == "user" for m in req.messages):
+        raise ValueError("대화에 사용자 메시지가 최소 1개는 포함되어야 합니다.")
 
-    if not messages or messages[-1]["role"] != "user":
-        raise ValueError("마지막 메시지는 반드시 사용자여야 합니다.")
-
-    messages.insert(0, {
-        "role": "system",
-        "content": "You are a helpful and kind code review assistant. Respond clearly and concisely."
-    })
+    prompt = build_prompt_from_memory(req.messages, req.summary, recent_turns=3)
+    messages = [
+        {"role": "system", "content": "You are a helpful and kind code review assistant. Respond clearly and concisely."},
+        {"role": "user", "content": prompt}
+    ]
 
     output = await generate(messages)
-    return FeedbackAnswerResponse(sessionId =req.sessionId , answer=output.strip())
+    return FeedbackAnswerResponse(sessionId=req.sessionId, answer=output.strip())

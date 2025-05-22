@@ -6,7 +6,7 @@ from src.schemas.interview_schema import (
     InterviewAnswerRequest, InterviewAnswerResponse,
     InterviewEndRequest, InterviewEndResponse
 )
-from src.core.llm_utils import parse_interview_review_response
+from src.core.llm_utils import parse_interview_review_response, build_prompt_from_memory
 from src.core.prompt_templates import format_interview_start_prompt
 
 # 1. 첫 질문 생성
@@ -23,14 +23,12 @@ async def generate_first_question(req: InterviewStartRequest) -> InterviewStartR
 
 # 2. 꼬리 질문 생성
 async def generate_followup_question(req: InterviewAnswerRequest) -> InterviewAnswerResponse:
-    chatml_history = [{"role": m.role, "content": m.content} for m in req.messages]
-
-    chatml_history.insert(0, {
-        "role": "system",
-        "content": "You are a mock technical interviewer. Ask only one follow-up question based on the previous answer."
-    })
-
-    output = await generate(chatml_history)
+    prompt = build_prompt_from_memory(req.messages, req.summary, recent_turns=3)
+    messages = [
+        {"role": "system", "content": "You are a mock technical interviewer. Ask only one follow-up question."},
+        {"role": "user", "content": prompt}
+    ]
+    output = await generate(messages)
     return InterviewAnswerResponse(sessionId=req.sessionId, question=output.strip())
 
 # 3. 면접 총평 생성

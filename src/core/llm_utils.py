@@ -77,3 +77,17 @@ def parse_interview_review_response(raw_output: str) -> InterviewEndResponse:
         return InterviewEndResponse(review=InterviewReview(**parsed))
     except Exception as e:
         raise ValueError(f"총평 JSON 파싱 실패: {e}\n출력:\n{raw_output}")
+    
+def build_prompt_from_memory(messages: list, summary: str = None, recent_turns: int = 3) -> str:
+    prompt_parts = []
+
+    if summary:
+        prompt_parts.append(f"📝 요약:\n{summary.strip()}\n")
+
+    # 최근 N턴 추출
+    recent_messages = messages[-(recent_turns * 2):]
+    for m in recent_messages:
+        role = "사용자" if m.role == "user" else "AI"  # ✅ 수정: m["role"] → m.role
+        prompt_parts.append(f"{role}: {m.content}")     # ✅ 수정: m["content"] → m.content
+
+    return "\n".join(prompt_parts).strip()

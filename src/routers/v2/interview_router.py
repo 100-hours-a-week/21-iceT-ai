@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from uuid import uuid4  # ✅ 추가
+
 from src.schemas.interview_schema import (
     InterviewStartRequest, InterviewStartResponse,
     InterviewAnswerRequest, InterviewAnswerResponse,
@@ -10,10 +12,17 @@ from src.services.interview_service import (
 
 router = APIRouter()
 
-# 1. 첫 질문
+#1. 첫 질문
 @router.post("/interview/start", response_model=InterviewStartResponse)
 async def interview_start(req: InterviewStartRequest):
-    return await generate_first_question(req)
+    session_id = str(uuid4())
+    result = await generate_first_question(req)
+    return InterviewStartResponse(
+        sessionId=session_id,
+        problemNumber=req.problemNumber,
+        title=req.title,
+        question=result.question
+    )
 
 # 2. 꼬리 질문
 @router.post("/interview/answer", response_model=InterviewAnswerResponse)

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class InterviewStartRequest(BaseModel):
     problemNumber: int = Field(description="문제 번호")
@@ -13,6 +13,7 @@ class InterviewStartRequest(BaseModel):
     code: str = Field(description="사용자 제출 코드")
 
 class InterviewStartResponse(BaseModel):
+    sessionId: str = Field(description="면접 세션 ID")
     problemNumber: int = Field(description="문제 번호")
     title: str = Field(description="문제 제목")
     question: str = Field(description="AI가 생성한 첫 면접 질문")
@@ -22,8 +23,9 @@ class Message(BaseModel):
     content: str = Field(description="메시지 내용")
 
 class InterviewAnswerRequest(BaseModel):
-    sessionId: str = Field(description="면접 세션 ID")
-    messages: List[Message] = Field(description="이전 대화 이력")
+    sessionId: str
+    messages: List[Message]
+    summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
 
 class InterviewAnswerResponse(BaseModel):
     sessionId: str = Field(description="면접 세션 ID")
