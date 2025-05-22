@@ -2,13 +2,14 @@ from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import FAISS
 from src.core.embedding_model import get_embedder
-import os, logging, dotenv
+import os, logging
+from dotenv import load_dotenv
 
 # 로깅
 logger = logging.getLogger(__name__)
 
 # 환경변수 설정
-dotenv.load_dotenv()
+load_dotenv()
 
 # 1. Markdown 문서 로드 (docs/ 폴더 내 .md 파일 대상)
 loader = DirectoryLoader(
@@ -27,8 +28,19 @@ splitter = MarkdownHeaderTextSplitter(
         ("###", "function")   # 개별 함수
     ]
 )
-chunks = splitter.split_documents(docs)
+chunks = []
+for doc in docs:
+    partial_chunks = splitter.split_text(doc.page_content)  # str → List[Document]
+    # 원래 문서의 metadata(source 등) 유지
+    for chunk in partial_chunks:
+        chunk.metadata.update(doc.metadata)  # 원본 메타데이터 보존
+        chunks.append(chunk)
 
+# splitter = RecursiveCharacterTextSplitter(
+#     chunk_size=500,
+#     chunk_overlap=100,
+# )
+# chunks = splitter.split_documents(docs)
 
 # 3. 벡터스토어 생성
 embedder = get_embedder()
