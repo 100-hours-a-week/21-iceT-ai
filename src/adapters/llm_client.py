@@ -1,8 +1,10 @@
 import logging, asyncio
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from src.config import settings
 from dotenv import load_dotenv
 from src.schemas.solution_schema import SolutionResponse
+import os
 
 # 환경변수 로드
 load_dotenv()
@@ -11,10 +13,18 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Langchain LLM 클라이언트 설정
-llm = ChatOpenAI(
+# llm = ChatOpenAI(
+#     model=settings.model,
+#     temperature=settings.temperature,
+#     max_tokens=settings.max_tokens,
+# )
+
+# Gemini LLM 클라이언트 설정
+llm = ChatGoogleGenerativeAI(
     model=settings.model,
     temperature=settings.temperature,
     max_tokens=settings.max_tokens,
+    google_api_key=os.getenv("GEMINI_API_KEY")
 )
 
 # LLM의 응답을 Pydantic 모델로 구조화하기 위한 래퍼
