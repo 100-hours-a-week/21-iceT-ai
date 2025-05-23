@@ -20,3 +20,11 @@ beautifulsoup4==4.12.3
 
 # Google Cloud Storage client
 google-cloud-storage>=3.1.0
+
+# Gemini용 추가 패키지
+google-ai-generativelanguage==0.6.18
+langchain-google-genai==2.1.4
+grpcio==1.71.0
+grpcio-status==1.71.0
+filetype==1.2.0
+protobuf==5.29.4
