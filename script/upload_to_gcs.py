@@ -1,3 +1,5 @@
+# 서버 실행 전 1회 실행 필요
+
 from google.cloud import storage
 import os, logging, dotenv
 

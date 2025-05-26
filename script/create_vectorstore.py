@@ -1,3 +1,5 @@
+# 서버 실행 전 1회 실행 필요
+
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import FAISS
