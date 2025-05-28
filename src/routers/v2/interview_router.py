@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from uuid import uuid4  # ✅ 추가
 
 from src.schemas.interview_schema import (
     InterviewStartRequest, InterviewStartResponse,
@@ -15,10 +14,9 @@ router = APIRouter()
 #1. 첫 질문
 @router.post("/interview/start", response_model=InterviewStartResponse)
 async def interview_start(req: InterviewStartRequest):
-    session_id = str(uuid4())
     result = await generate_first_question(req)
     return InterviewStartResponse(
-        sessionId=session_id,
+        sessionId=req.sessionId,  # ✅ 요청에서 받은 sessionId 사용
         problemNumber=req.problemNumber,
         title=req.title,
         question=result.question

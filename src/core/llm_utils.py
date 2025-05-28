@@ -6,10 +6,6 @@ from src.schemas.solution_schema import SolutionResponse
 from src.schemas.interview_schema import InterviewEndResponse, InterviewReview
 
 
-import json
-import re
-from src.schemas.feedback_schema import FeedbackResponse
-
 def parse_json_from_llm_output(raw_output: str) -> dict:
     """LLM 출력에서 마크다운 제거 및 JSON 파싱 (이중 파싱 포함)"""
     print("✅ [DEBUG] 파싱 대상 원문:\n", raw_output)
@@ -30,7 +26,7 @@ def parse_json_from_llm_output(raw_output: str) -> dict:
             raise
 
 
-def parse_feedback_response(raw_output: str, title: str) -> FeedbackResponse:
+def parse_feedback_response(raw_output: str, data: dict) -> FeedbackResponse:
     print("🧾 LLM 응답 원문:\n" + "-" * 50)
     print(raw_output)
     print("-" * 50)
@@ -38,28 +34,41 @@ def parse_feedback_response(raw_output: str, title: str) -> FeedbackResponse:
     try:
         parsed = parse_json_from_llm_output(raw_output)
 
-        # ✅ 구조 검증
-        if not isinstance(parsed, dict):
-            raise ValueError("파싱된 결과가 dict가 아닙니다.")
+        # ✅ 키 존재 검증
         for key in ("good", "bad", "improved_code"):
             if key not in parsed:
                 raise ValueError(f"예상 키 누락: '{key}'")
 
         return FeedbackResponse(
-            title=title,
+            sessionId=data.get("sessionId", ""),
+            problemNumber=data.get("problemNumber", 0),
+            title=data.get("title", "제목 없음"),
             good=parsed["good"],
             bad=parsed["bad"],
-            improved_code=parsed["improved_code"]
+            improvedCode=parsed["improved_code"]  # ✅ snake_case 사용
         )
+
+    except Exception as e:
+        print("❌ parse_feedback_response 실패:", e)
+        return FeedbackResponse(
+            sessionId=data.get("sessionId", ""),
+            problemNumber=data.get("problemNumber", 0),
+            title=data.get("title", "피드백 생성 실패"),
+            good=[],
+            bad=[f"⚠️ 오류: {str(e)}"],
+            improvedCode="⚠️ 파싱 실패: 모델 응답이 올바른 JSON 형식이 아닙니다."
+        )
+
 
     except Exception as e:
         print("❌ parse_feedback_response 실패:", e)
         # ✅ fallback 응답 반환 (서버 죽지 않게)
         return FeedbackResponse(
-            title=title or "피드백 생성 실패",
+            problemNumber=data.get("problemNumber", 0),
+            title=data.get("title", "피드백 생성 실패"),
             good=[],
             bad=[f"⚠️ 오류: {str(e)}"],
-            improved_code="⚠️ 파싱 실패: 모델 응답이 올바른 JSON 형식이 아닙니다."
+            improvedCode="⚠️ 파싱 실패: 모델 응답이 올바른 JSON 형식이 아닙니다."
         )
 
 
@@ -77,7 +86,8 @@ def parse_interview_review_response(raw_output: str) -> InterviewEndResponse:
         return InterviewEndResponse(review=InterviewReview(**parsed))
     except Exception as e:
         raise ValueError(f"총평 JSON 파싱 실패: {e}\n출력:\n{raw_output}")
-    
+
+
 def build_prompt_from_memory(messages: list, summary: str = None, recent_turns: int = 3) -> str:
     prompt_parts = []
 
@@ -87,7 +97,7 @@ def build_prompt_from_memory(messages: list, summary: str = None, recent_turns: 
     # 최근 N턴 추출
     recent_messages = messages[-(recent_turns * 2):]
     for m in recent_messages:
-        role = "사용자" if m.role == "user" else "AI"  # ✅ 수정: m["role"] → m.role
-        prompt_parts.append(f"{role}: {m.content}")     # ✅ 수정: m["content"] → m.content
+        role = "사용자" if m.role == "user" else "AI"
+        prompt_parts.append(f"{role}: {m.content}")
 
     return "\n".join(prompt_parts).strip()

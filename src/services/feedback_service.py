@@ -28,7 +28,7 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
     ]
 
     raw_output = await generate(messages)
-    return parse_feedback_response(raw_output, title=data.get("title", "제목 없음"))
+    return parse_feedback_response(raw_output, data)  # ✅ title → data 전체 전달
 
 
 # 2. /feedback/answer: 챗봇 자유 응답
