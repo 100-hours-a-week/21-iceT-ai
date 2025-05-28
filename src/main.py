@@ -12,6 +12,7 @@ from src.routers.v1.solution_router import router as solution_router
 from src.routers.v2.feedback_router import router as feedback_router
 from src.routers.v2.feedback_chat_router import router as feedback_chat_router
 from src.routers.v2.interview_router import router as interview_router
+from src.routers.v2.summary_router import router as summary_router
 
 app = FastAPI()
 
@@ -86,3 +87,4 @@ app.include_router(solution_router, prefix="/api/ai/v1")
 app.include_router(feedback_router, prefix="/api/ai/v2")
 app.include_router(feedback_chat_router, prefix="/api/ai/v2")
 app.include_router(interview_router, prefix="/api/ai/v2")
+app.include_router(summary_router, prefix="/api/ai/v2")

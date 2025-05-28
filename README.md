@@ -4,6 +4,10 @@
 ```
 
 ```
+Remove-Item Env:VLLM_URL
+```
+
+```
 uvicorn src.main:app --reload
 ```
 
