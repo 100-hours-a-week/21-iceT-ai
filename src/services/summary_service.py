@@ -1,5 +1,5 @@
-from src.schemas.chat_schema import SummaryRequest, SummaryResponse
-from src.adapters.llm_summary import generate_summary_from_cpu_model  # ✅ 3단계에서 만들 예정
+from src.schemas.summary_schema import SummaryRequest, SummaryResponse
+from src.adapters.llm_summary import generate_summary_from_cpu_model
 
 def get_summary_prompt(mode: str) -> str:
     if mode == "feedback":

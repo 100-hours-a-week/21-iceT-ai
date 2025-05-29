@@ -1,9 +1,10 @@
+# src/config.py
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # ✅ vLLM 메인 모델 설정
-    model: str = "Qwen/Qwen2.5-Coder-7B-Instruct"
+    vllm_model: str = "Qwen/Qwen2.5-Coder-7B-Instruct"
     vllm_url: str = "http://localhost:8001/v1/chat/completions"
     generation_temperature: float = 0.3
     generation_max_tokens: int = 4096
@@ -19,8 +20,12 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-pro"
     gemini_api_key: str = ""
 
+    # ✅ Upstage 설정
+    use_upstage: bool = True
+    model: str = "solar-pro-250422"
+    upstage_api_key: str = ""
+
     class Config:
         env_file = ".env"
-
 
 settings = Settings()

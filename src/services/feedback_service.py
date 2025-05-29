@@ -1,6 +1,6 @@
 # src/services/feedback_service.py
 
-from adapters.llm_main import generate
+from src.adapters.llm_main import generate
 from src.schemas.feedback_schema import (
     FeedbackRequest, FeedbackResponse,
     FeedbackAnswerRequest, FeedbackAnswerResponse

@@ -1,6 +1,6 @@
 # src/services/solution_service.py
 
-from adapters.llm_main import generate
+from src.adapters.llm_main import generate
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.core.llm_utils import parse_solution_response
 from src.core.prompt_templates import format_solution_prompt

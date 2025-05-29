@@ -1,63 +1,67 @@
-import os
 import asyncio
-from dotenv import load_dotenv
+import logging
+import httpx
+import os
+import json
+from openai import OpenAI
 from src.config import settings
+from src.schemas.solution_schema import SolutionResponse
 
-# Gemini 또는 vLLM 선택 여부
-USE_GEMINI = os.getenv("USE_GEMINI", "False").lower() == "true"
+logger = logging.getLogger(__name__)
 
-# 📌 Gemini 분기
-if USE_GEMINI:
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    from src.schemas.solution_schema import SolutionResponse  # 필요 시 교체
+def to_messages(prompt_or_messages):
+    if isinstance(prompt_or_messages, str):
+        return [{"role": "user", "content": prompt_or_messages}]
+    return prompt_or_messages
 
-    load_dotenv()
 
-    llm = ChatGoogleGenerativeAI(
-        model=settings.gemini_model,
-        temperature=settings.generation_temperature,
-        max_tokens=settings.generation_max_tokens,
-        google_api_key=os.getenv("GEMINI_API_KEY")
-    )
+# ✅ 분기 방식: Upstage vs vLLM
+async def generate(prompt_or_messages) -> SolutionResponse:
+    messages = to_messages(prompt_or_messages)
 
-    structured_llm = llm.with_structured_output(SolutionResponse)
+    if settings.use_upstage:
+        print(f"✅ [DEBUG] 사용 모델 이름: {settings.model}")
+        print(f"✅ [DEBUG] Upstage 사용 중 / API_KEY={settings.upstage_api_key[:10]}...")
+        # 🔶 Upstage 클라이언트
+        client = OpenAI(
+            api_key=settings.upstage_api_key,
+            base_url="https://api.upstage.ai/v1"
+        )
 
-    def to_prompt(prompt_or_messages):
-        if isinstance(prompt_or_messages, str):
-            return prompt_or_messages
-        return "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in prompt_or_messages if m["role"] != "system")
+        # structured output 요구
+        response_format = {
+            "type": "json_schema",
+            "json_schema": SolutionResponse.model_json_schema()
+        }
 
-    async def generate(prompt_or_messages) -> str:
-        prompt = to_prompt(prompt_or_messages)
         try:
-            response = await asyncio.wait_for(structured_llm.ainvoke(prompt), timeout=60)
-            return response.json() if hasattr(response, "json") else str(response)
+            response = client.chat.completions.create(
+                model=settings.model,
+                messages=messages,
+                response_format=response_format,
+                temperature=settings.generation_temperature,
+                max_tokens=settings.generation_max_tokens,
+            )
+            content = response.choices[0].message.content
+            return SolutionResponse.model_validate_json(content)
         except Exception as e:
-            raise RuntimeError(f"Gemini 호출 실패: {e}")
+            logger.error("Upstage 호출 실패", exc_info=True)
+            raise RuntimeError("해설 생성 중 오류가 발생했습니다.") from e
 
-# 📌 vLLM 분기
-else:
-    import httpx
-
-    def to_messages(prompt_or_messages):
-        if isinstance(prompt_or_messages, str):
-            return [{"role": "user", "content": prompt_or_messages}]
-        return prompt_or_messages
-
-    async def generate(prompt_or_messages) -> str:
-        messages = to_messages(prompt_or_messages)
-
+    else:
+        # 🔷 기존 vLLM 서버 호출
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 settings.vllm_url,
                 json={
-                    "model": settings.model,
+                    "model": settings.vllm_model,
                     "messages": messages,
-                    "temperature": settings.temperature,
-                    "max_tokens": settings.max_tokens,
+                    "temperature": settings.generation_temperature,
+                    "max_tokens": settings.generation_max_tokens,
                     "top_p": 0.9
                 },
                 timeout=30.0
             )
             response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"].strip()
+            content = response.json()["choices"][0]["message"]["content"]
+            return SolutionResponse.model_validate_json(content)
