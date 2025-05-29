@@ -1,6 +1,6 @@
 # src/services/interview_service.py
 
-from src.adapters.vllm import generate
+from adapters.llm_main import generate
 from src.schemas.interview_schema import (
     InterviewStartRequest, InterviewStartResponse,
     InterviewAnswerRequest, InterviewAnswerResponse,

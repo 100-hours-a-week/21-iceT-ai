@@ -16,7 +16,7 @@ router = APIRouter()
 async def interview_start(req: InterviewStartRequest):
     result = await generate_first_question(req)
     return InterviewStartResponse(
-        sessionId=req.sessionId,  # ✅ 요청에서 받은 sessionId 사용
+        sessionId=req.sessionId,
         problemNumber=req.problemNumber,
         title=req.title,
         question=result.question

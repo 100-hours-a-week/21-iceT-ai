@@ -1,11 +1,18 @@
-# ✅ 웹 서버
-fastapi
-uvicorn
+# Python >= 3.10
 
-# ✅ HTTP 클라이언트
-httpx
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+httpx==0.27.0
+pydantic==2.6.4
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
 
-# ✅ 스키마 유효성 검사 및 설정 관리
-pydantic>=2.0
-pydantic-settings
+# LangChain & LangGraph
+langchain-core==0.1.47
+langchain==0.1.16
+langgraph==0.0.37
+openai==1.25.1
+tiktoken==0.7.0
 
+# 테스트
+pytest==8.1.1
