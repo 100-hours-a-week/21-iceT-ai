@@ -19,7 +19,7 @@ client = OpenAI(
 async def generate_summary_from_cpu_model(messages: List[dict]) -> str:
     try:
         response = client.chat.completions.create(
-            model=settings.upstage_model,  # 예: "solar-mini" 또는 "solar-pro"
+            model=settings.upstage_summary_model,  # 예: "solar-mini" 또는 "solar-pro"
             messages=messages,
             temperature=settings.summary_temperature,
             max_tokens=settings.summary_max_tokens,

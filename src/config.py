@@ -13,16 +13,20 @@ class Settings(BaseSettings):
     summary_model: str = "qwen1.5-1.8b-chat"
     summary_llm_url: str = "http://localhost:1234/v1/chat/completions"
     summary_temperature: float = 0.3
-    summary_max_tokens: int = 768
+    summary_max_tokens: int = 2048
 
     # ✅ Gemini 설정
     use_gemini: bool = False
-    gemini_model: str = "gemini-pro"
+    gemini_model: str = "gemini-2.5-flash-preview-05-20"
     gemini_api_key: str = ""
 
     # ✅ Upstage 설정
     use_upstage: bool = True
     upstage_model: str = "solar-pro"
+    upstage_api_key: str = ""
+
+    use_upstage: bool = True
+    upstage_summary_model: str = "solar-pro2"
     upstage_api_key: str = ""
 
     class Config:

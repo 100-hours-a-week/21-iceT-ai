@@ -1,25 +1,13 @@
 import asyncio
 import logging
 import httpx
-import os
 import json
 from openai import OpenAI
-from src.config import settings
 from pydantic import BaseModel
 
-from src.schemas.feedback_schema import FeedbackResponse, FeedbackAnswerResponse
-from src.schemas.interview_schema import InterviewStartResponse, InterviewAnswerResponse, InterviewEndResponse
-from src.schemas.solution_schema import SolutionResponse
-from src.schemas.summary_schema import SummaryResponse
-
-from src.core.llm_utils import (
-    parse_feedback_response,
-    parse_interview_start_response,
-    parse_interview_answer_response,
-    parse_interview_end_response,
-    parse_solution_response,
-    parse_summary_response,
-    parse_feedback_answer_response,
+from src.config import settings
+from adapters.llm_parsers import (
+    SCHEMA_PARSERS,
     parse_json_from_llm_output
 )
 
@@ -31,18 +19,20 @@ def to_messages(prompt_or_messages):
     return prompt_or_messages
 
 
-# ✅ 분기 방식: Upstage vs vLLM
-async def generate(prompt_or_messages, schema_class, original_input=None) -> BaseModel:
+# ✅ Upstage / vLLM 공통 호출 인터페이스
+async def generate(prompt_or_messages, schema_class: type[BaseModel] = None, original_input=None) -> BaseModel | str:
     messages = to_messages(prompt_or_messages)
 
+    # ✅ Upstage structured output
     if settings.use_upstage:
-        # 🔶 Upstage 클라이언트
         client = OpenAI(
             api_key=settings.upstage_api_key,
             base_url="https://api.upstage.ai/v1"
         )
 
-        # structured output 요구
+        if schema_class is None:
+            raise ValueError("Upstage 호출 시 schema_class는 필수입니다.")
+
         base_schema = schema_class.model_json_schema()
         core_schema = {
             "type": "object",
@@ -73,10 +63,10 @@ async def generate(prompt_or_messages, schema_class, original_input=None) -> Bas
             return schema_class.model_validate_json(content)
         except Exception as e:
             logger.error("Upstage 호출 실패", exc_info=True)
-            raise RuntimeError("해설 생성 중 오류가 발생했습니다.") from e
+            raise RuntimeError("LLM structured output 생성 중 오류가 발생했습니다.") from e
 
+    # ✅ vLLM fallback: 일반 JSON 응답 파싱
     else:
-        # 🔷 기존 vLLM 서버 호출
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 settings.vllm_url,
@@ -91,20 +81,13 @@ async def generate(prompt_or_messages, schema_class, original_input=None) -> Bas
             )
             response.raise_for_status()
             content = response.json()["choices"][0]["message"]["content"]
-            
-            SCHEMA_PARSERS = {
-                FeedbackResponse: lambda content, input: parse_feedback_response(content, input),
-                FeedbackAnswerResponse: lambda content, input: parse_feedback_answer_response(content, input.sessionId),  # ← 이 줄 추가
-                InterviewStartResponse: lambda content, input: parse_interview_start_response(content, input),
-                InterviewAnswerResponse: lambda content, input: parse_interview_answer_response(content, input.sessionId),
-                InterviewEndResponse: lambda content, _: parse_interview_end_response(content),
-                SolutionResponse: lambda content, _: parse_solution_response(content),
-                SummaryResponse: lambda content, input: parse_summary_response(content, input.sessionId),
-            }
+
+            if schema_class is None:
+                return content  # 자유 응답형 (예: answer)
 
             if schema_class in SCHEMA_PARSERS:
                 return SCHEMA_PARSERS[schema_class](content, original_input)
             else:
                 parsed = parse_json_from_llm_output(content)
                 return schema_class(**parsed)
-
+#         except httpx.RequestError as e:
