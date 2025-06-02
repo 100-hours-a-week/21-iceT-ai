@@ -8,9 +8,9 @@ from pathlib import Path
 BASE_URL = "http://localhost:8000/api/ai/v2"
 
 # CSV 경로
-session_csv = Path("chat_session.csv")
-record_csv = Path("chat_record.csv")
-summary_csv = Path("chat_summary.csv")
+session_csv = Path("DB/chat_session.csv")
+record_csv = Path("DB/chat_record.csv")
+summary_csv = Path("DB/chat_summary.csv")
 
 def append_csv(path, data):
     df = pd.DataFrame([data])
@@ -20,7 +20,7 @@ def append_csv(path, data):
         df.to_csv(path, index=False)
 
 # UI 구성
-st.set_page_config(page_title="AI 챗봇", layout="centered")
+st.set_page_config(page_title="KocoAI", layout="centered")
 st.title("💬 Koco AI 챗봇 (면접 & 피드백 모드)")
 
 if "session_id" not in st.session_state:
@@ -105,10 +105,37 @@ if submitted and not st.session_state.started:
     res = httpx.post(f"{BASE_URL}{endpoint}", json=st.session_state.start_payload, timeout=60.0)
     response = res.json()
 
-    # 메시지 초기화
+    # ✅ 개선된 코드 마크다운 블록 감싸기
+    improved_code = response.get("improvedCode", "").strip()
+    language = st.session_state.start_payload.get("codeLanguage", "python")
+    if not improved_code.startswith("```"):
+        improved_code = f"```{language}\n{improved_code}\n```"
+
+    # ✅ 어시스턴트 메시지 포맷
+    if st.session_state.mode == "feedback":
+        assistant_msg = (
+            f"**✅ 잘한 점**\n" +
+            "\n".join(f"- {item}" for item in response.get("good", [])) +
+            "\n\n**⚠️ 개선할 점**\n" +
+            "\n".join(f"- {item}" for item in response.get("bad", [])) +
+            f"\n\n**🔧 개선된 코드**\n\n{improved_code}"
+        )
+    else:
+        assistant_msg = response.get("question", "")
+
+
+    user_msg = (
+        f"📘 **문제 제목**: {title}\n\n"
+        f"📝 **문제 설명**:\n{description}\n\n"
+        f"🔢 **입력 조건**:\n{input_rule}\n"
+        f"🔢 **출력 조건**:\n{output_rule}\n"
+        f"🧪 **입출력 예시**:\n입력: {input_example}\n출력: {output_example}\n\n"
+        f"💻 **사용자 코드 ({language})**:\n```{language}\n{code}\n```"
+    )
+
     st.session_state.messages = [
-        { "role": "user", "content": f"{description}\n코드:\n{code}" },
-        { "role": "assistant", "content": response.get("improvedCode") or response.get("question") }
+        { "role": "user", "content": user_msg },
+        { "role": "assistant", "content": assistant_msg }
     ]
 
     append_csv(session_csv, {

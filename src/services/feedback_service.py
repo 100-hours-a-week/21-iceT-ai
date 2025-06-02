@@ -7,6 +7,7 @@ from src.schemas.feedback_schema import (
 )
 from src.core.prompt_templates import format_feedback_prompt
 from src.core.llm_utils import parse_feedback_response, build_prompt_from_memory
+from src.config import settings
 
 # 1. /feedback: 코드 피드백 생성
 async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
@@ -27,9 +28,11 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
         {"role": "user", "content": prompt}
     ]
 
-    raw_output = await generate(messages)
-    return parse_feedback_response(raw_output, data)  # ✅ title → data 전체 전달
-
+    if settings.use_upstage:
+        return await generate(messages, schema_class=FeedbackResponse)
+    else:
+        raw_output = await generate(messages, schema_class=None)
+        return parse_feedback_response(raw_output, data)
 
 # 2. /feedback/answer: 챗봇 자유 응답
 async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswerResponse:
@@ -41,6 +44,8 @@ async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswer
         {"role": "system", "content": "You are a helpful and kind code review assistant. Respond clearly and concisely."},
         {"role": "user", "content": prompt}
     ]
-
-    output = await generate(messages)
-    return FeedbackAnswerResponse(sessionId=req.sessionId, answer=output.strip())
+    if settings.use_upstage:
+        return await generate(messages, schema_class=FeedbackAnswerResponse)
+    else:
+        output = await generate(messages)
+        return FeedbackAnswerResponse(sessionId=req.sessionId, answer=output.strip())

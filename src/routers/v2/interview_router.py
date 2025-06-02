@@ -6,7 +6,7 @@ from src.schemas.interview_schema import (
     InterviewEndRequest, InterviewEndResponse
 )
 from src.services.interview_service import (
-    generate_first_question, generate_followup_question, generate_interview_review
+    generate_first_question, generate_followup_question, generate_interview_end
 )
 
 router = APIRouter()
@@ -30,4 +30,4 @@ async def interview_followup(req: InterviewAnswerRequest):
 # 3. 총평
 @router.post("/interview/end", response_model=InterviewEndResponse)
 async def interview_end(req: InterviewEndRequest):
-    return await generate_interview_review(req)
+    return await generate_interview_end(req)

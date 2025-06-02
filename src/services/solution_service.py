@@ -4,6 +4,7 @@ from src.adapters.llm_main import generate
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.core.llm_utils import parse_solution_response
 from src.core.prompt_templates import format_solution_prompt
+from src.config import settings
 
 # 문제 해설 생성 함수
 async def explain_solution(req: SolutionRequest) -> SolutionResponse:
@@ -25,9 +26,12 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
         {"role": "user", "content": prompt}
     ]
 
-    # 3. LLM 호출 (vLLM)
-    raw_output = await generate(messages)
-    print("✅ [DEBUG] LLM 응답:\n", raw_output)
-
-    # 4. JSON 파싱
-    return parse_solution_response(raw_output)
+# 3. Upstage/vLLM 분기 처리
+    if settings.use_upstage:
+        # Upstage: structured output 사용
+        return await generate(messages, schema_class=SolutionResponse)
+    else:
+        # vLLM: 기존 방식
+        raw_output = await generate(messages)
+        print("✅ [DEBUG] LLM 응답:\n", raw_output)
+        return parse_solution_response(raw_output)

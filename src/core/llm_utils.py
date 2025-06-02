@@ -1,10 +1,26 @@
 import re
 import json
+from typing import List
 
-from src.schemas.feedback_schema import FeedbackResponse
+# 피드백
+from src.schemas.feedback_schema import (
+    FeedbackResponse,
+    FeedbackAnswerResponse
+)
+
+# 면접
+from src.schemas.interview_schema import (
+    InterviewStartRequest,
+    InterviewStartResponse,
+    InterviewAnswerResponse,
+    InterviewEndResponse,
+)
+
+# 문제 풀이
 from src.schemas.solution_schema import SolutionResponse
-from src.schemas.interview_schema import InterviewEndResponse, InterviewReview
 
+# 요약
+from src.schemas.summary_schema import SummaryResponse
 
 def parse_json_from_llm_output(raw_output: str) -> dict:
     """LLM 출력에서 마크다운 제거 및 JSON 파싱 (이중 파싱 포함)"""
@@ -13,80 +29,71 @@ def parse_json_from_llm_output(raw_output: str) -> dict:
     cleaned = re.sub(r"^```json\s*|\s*```$", "", raw_output.strip())
 
     try:
-        parsed = json.loads(cleaned)
-        return parsed
+        return json.loads(cleaned)
     except json.JSONDecodeError as e:
         print("⚠️ 1st parse failed:", e)
         try:
-            parsed = json.loads(json.loads(cleaned))
-            print("✅ [DEBUG] double-parsed:", parsed)
-            return parsed
+            return json.loads(json.loads(cleaned))
         except Exception as e2:
             print("❌ double json.loads failed:", e2)
             raise
 
+def validate_keys(parsed: dict, required_keys: List[str]):
+    for key in required_keys:
+        if key not in parsed:
+            raise ValueError(f"필수 키 누락: '{key}'")
 
-def parse_feedback_response(raw_output: str, data: dict) -> FeedbackResponse:
-    print("🧾 LLM 응답 원문:\n" + "-" * 50)
-    print(raw_output)
-    print("-" * 50)
-
-    try:
-        parsed = parse_json_from_llm_output(raw_output)
-
-        # ✅ 키 존재 검증
-        for key in ("good", "bad", "improved_code"):
-            if key not in parsed:
-                raise ValueError(f"예상 키 누락: '{key}'")
-
-        return FeedbackResponse(
-            sessionId=data.get("sessionId", ""),
-            problemNumber=data.get("problemNumber", 0),
-            title=data.get("title", "제목 없음"),
-            good=parsed["good"],
-            bad=parsed["bad"],
-            improvedCode=parsed["improved_code"]  # ✅ snake_case 사용
-        )
-
-    except Exception as e:
-        print("❌ parse_feedback_response 실패:", e)
-        return FeedbackResponse(
-            sessionId=data.get("sessionId", ""),
-            problemNumber=data.get("problemNumber", 0),
-            title=data.get("title", "피드백 생성 실패"),
-            good=[],
-            bad=[f"⚠️ 오류: {str(e)}"],
-            improvedCode="⚠️ 파싱 실패: 모델 응답이 올바른 JSON 형식이 아닙니다."
-        )
-
-
-    except Exception as e:
-        print("❌ parse_feedback_response 실패:", e)
-        # ✅ fallback 응답 반환 (서버 죽지 않게)
-        return FeedbackResponse(
-            problemNumber=data.get("problemNumber", 0),
-            title=data.get("title", "피드백 생성 실패"),
-            good=[],
-            bad=[f"⚠️ 오류: {str(e)}"],
-            improvedCode="⚠️ 파싱 실패: 모델 응답이 올바른 JSON 형식이 아닙니다."
-        )
-
-
+#솔루션
 def parse_solution_response(raw_output: str) -> SolutionResponse:
-    try:
-        parsed = parse_json_from_llm_output(raw_output)
-        return SolutionResponse(**parsed)
-    except Exception as e:
-        raise ValueError(f"❌ Qwen 응답을 JSON으로 파싱하지 못했습니다.\n\n[원본 응답]:\n{raw_output}\n\n[에러]: {e}")
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["problemNumber", "problemCheck", "problemSolving", "solutionCode"])
+    validate_keys(parsed["problemCheck"], ["problemDescription", "algorithm"])
+    validate_keys(parsed["solutionCode"], ["python", "cpp", "java"])
+    return SolutionResponse(**parsed)
 
+#피드백
+def parse_feedback_response(raw_output: str, data: dict) -> FeedbackResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["good", "bad", "improved_code"])
+    return FeedbackResponse(
+        sessionId=data.get("sessionId", ""),
+        problemNumber=data.get("problemNumber", 0),
+        title=data.get("title", "제목 없음"),
+        good=parsed["good"],
+        bad=parsed["bad"],
+        improvedCode=parsed["improved_code"]
+    )
 
-def parse_interview_review_response(raw_output: str) -> InterviewEndResponse:
-    try:
-        parsed = parse_json_from_llm_output(raw_output)
-        return InterviewEndResponse(review=InterviewReview(**parsed))
-    except Exception as e:
-        raise ValueError(f"총평 JSON 파싱 실패: {e}\n출력:\n{raw_output}")
+def parse_feedback_answer_response(raw_output: str, session_id: str) -> FeedbackAnswerResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["answer"])
+    return FeedbackAnswerResponse(sessionId=session_id, answer=parsed["answer"])
 
+#인터뷰
+def parse_interview_start_response(raw_output: str, req: InterviewStartRequest) -> InterviewStartResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["question"])
+    return InterviewStartResponse(
+        sessionId=req.sessionId,
+        problemNumber=req.problemNumber,
+        title=req.title,
+        question=parsed["question"]
+    )
+
+def parse_interview_answer_response(raw_output: str, session_id: str) -> InterviewAnswerResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["question"])
+    return InterviewAnswerResponse(sessionId=session_id, question=parsed["question"])
+
+def parse_interview_end_response(raw_output: str) -> InterviewEndResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["good", "bad", "improvement"])
+    return InterviewEndResponse(review=InterviewEnd(**parsed))
+
+def parse_summary_response(raw_output: str, session_id: str) -> SummaryResponse:
+    parsed = parse_json_from_llm_output(raw_output)
+    validate_keys(parsed, ["summary"])
+    return SummaryResponse(sessionId=session_id, summary=parsed["summary"])
 
 def build_prompt_from_memory(messages: list, summary: str = None, recent_turns: int = 3) -> str:
     prompt_parts = []
@@ -94,7 +101,6 @@ def build_prompt_from_memory(messages: list, summary: str = None, recent_turns: 
     if summary:
         prompt_parts.append(f"📝 요약:\n{summary.strip()}\n")
 
-    # 최근 N턴 추출
     recent_messages = messages[-(recent_turns * 2):]
     for m in recent_messages:
         role = "사용자" if m.role == "user" else "AI"

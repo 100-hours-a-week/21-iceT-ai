@@ -10,27 +10,25 @@ def to_prompt(messages: List[dict]) -> str:
         f"{m['role'].capitalize()}: {m['content']}" for m in messages if m["role"] in {"user", "assistant"}
     )
 
-# ✅ Upstage 사용 여부 확인
-if settings.use_upstage:
-    # Upstage 클라이언트 설정
-    client = OpenAI(
-        api_key=settings.upstage_api_key,
-        base_url="https://api.upstage.ai/v1"
-    )
+# Upstage 클라이언트 설정
+client = OpenAI(
+    api_key=settings.upstage_api_key,
+    base_url="https://api.upstage.ai/v1"
+)
 
-    async def generate_summary_from_cpu_model(messages: List[dict]) -> str:
-        try:
-            response = client.chat.completions.create(
-                model=settings.model,  # 예: "solar-mini" 또는 "solar-pro"
-                messages=messages,
-                temperature=settings.summary_temperature,
-                max_tokens=settings.summary_max_tokens,
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            raise RuntimeError(f"Upstage 요약 실패: {e}")
+async def generate_summary_from_cpu_model(messages: List[dict]) -> str:
+    try:
+        response = client.chat.completions.create(
+            model=settings.upstage_model,  # 예: "solar-mini" 또는 "solar-pro"
+            messages=messages,
+            temperature=settings.summary_temperature,
+            max_tokens=settings.summary_max_tokens,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        raise RuntimeError(f"Upstage 요약 실패: {e}")
 
-else:
+"""
     # 기존 vLLM 구조
     async def generate_summary_from_cpu_model(messages: List[dict]) -> str:
         async with httpx.AsyncClient() as client:
@@ -46,3 +44,4 @@ else:
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
+"""

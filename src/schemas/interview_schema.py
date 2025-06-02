@@ -36,10 +36,10 @@ class InterviewEndRequest(BaseModel):
     sessionId: str = Field(description="면접 세션 ID")
     messages: List[Message] = Field(description="면접 전체 대화 기록")
 
-class InterviewReview(BaseModel):
+class InterviewEnd(BaseModel):
     good: List[str] = Field(description="잘한 점")
     bad: List[str] = Field(description="부족했던 점")
     improvement: List[str] = Field(description="개선 사항 제안")
 
 class InterviewEndResponse(BaseModel):
-    review: InterviewReview = Field(description="AI가 생성한 구조화된 면접 총평")
+    review: InterviewEnd = Field(description="AI가 생성한 구조화된 면접 총평")
