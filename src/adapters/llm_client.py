@@ -34,7 +34,7 @@ structured_llm = llm.with_structured_output(SolutionResponse)
 async def generate_solution(prompt: str) -> SolutionResponse:
     try:
         # OpenAI 비동기 호출
-        return await asyncio.wait_for(structured_llm.ainvoke(prompt), timeout=60)
+        return await asyncio.wait_for(structured_llm.ainvoke(prompt), timeout=300)
     except Exception as e:
         logger.error("LLM 호출 실패", exc_info=True)
         raise RuntimeError("해설 생성 중 오류가 발생했습니다.") from e
