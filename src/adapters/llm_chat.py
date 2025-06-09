@@ -6,7 +6,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from src.config import settings
-from adapters.llm_parsers import (
+from src.adapters.llm_parsers import (
     SCHEMA_PARSERS,
     parse_json_from_llm_output
 )
@@ -56,8 +56,8 @@ async def generate(prompt_or_messages, schema_class: type[BaseModel] = None, ori
                 model=settings.upstage_model,
                 messages=messages,
                 response_format=response_format,
-                temperature=settings.generation_temperature,
-                max_tokens=settings.generation_max_tokens,
+                temperature=settings.chat_temperature,
+                max_tokens=settings.chat_max_tokens
             )
             content = response.choices[0].message.content
             return schema_class.model_validate_json(content)
@@ -73,8 +73,8 @@ async def generate(prompt_or_messages, schema_class: type[BaseModel] = None, ori
                 json={
                     "model": settings.vllm_model,
                     "messages": messages,
-                    "temperature": settings.generation_temperature,
-                    "max_tokens": settings.generation_max_tokens,
+                    "temperature": settings.chat_temperature,
+                    "max_tokens": settings.chat_max_tokens,
                     "top_p": 0.9
                 },
                 timeout=120.0
@@ -90,4 +90,3 @@ async def generate(prompt_or_messages, schema_class: type[BaseModel] = None, ori
             else:
                 parsed = parse_json_from_llm_output(content)
                 return schema_class(**parsed)
-#         except httpx.RequestError as e:

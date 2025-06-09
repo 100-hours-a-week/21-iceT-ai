@@ -1,32 +1,31 @@
-from adapters.llm_chat import generate
+from src.adapters.llm_solution import generate_solution
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
-from src.core.prompt_templates import format_solution_prompt
+from src.core.prompt_templates import SOLUTION_PROMPT
+from src.core.vector_store import load_vectorstore
 from src.config import settings
 import json
 
-# 문제 해설 생성 함수
+retriever = load_vectorstore().as_retriever()
+
 async def explain_solution(req: SolutionRequest) -> SolutionResponse:
-    # 1. 프롬프트 문자열 생성
-    prompt = format_solution_prompt({
-        "problemNumber": req.problemNumber,
-        "title": req.title,
-        "description": req.description,
-        "input": req.input,
-        "output": req.output,
-        "inputExample": req.inputExample,
-        "outputExample": req.outputExample,
-    })
+    # 문제 설명 기반으로 관련 문서 검색
+    docs = await retriever.ainvoke(req.description)
+    context = "\n\n".join(d.page_content[:500] for d in docs)  # 길이 제한
 
-    # 2. ChatML 메시지 구성
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant that explains algorithm problems in JSON format only."},
-        {"role": "user", "content": prompt}
-    ]
+    # 프롬프트 템플릿에 문제 정보 삽입
+    prompt = SOLUTION_PROMPT.invoke(
+        {
+            "problemNumber":  req.problemNumber,
+            "title":          req.title,
+            "description":    req.description,
+            "input":          req.input,
+            "output":         req.output,
+            "inputExample":   req.inputExample,
+            "outputExample":  req.outputExample,
+            "context":        context
+        }
+    )
 
-    # 3. Upstage / vLLM 분기 처리
-    if settings.use_upstage:
-        return await generate(messages, schema_class=SolutionResponse)
-    else:
-        raw_output = await generate(messages)
-        parsed = json.loads(raw_output.strip().strip("```json").strip("```"))
-        return SolutionResponse(**parsed)
+    # LLM에 프롬프트 전송하여 해설 생성
+    result = await generate_solution(prompt)
+    return result

@@ -1,4 +1,4 @@
-from adapters.llm_chat import generate
+from src.adapters.llm_chat import generate
 from src.schemas.interview_schema import (
     InterviewStartRequest, InterviewStartResponse,
     InterviewAnswerRequest, InterviewAnswerResponse,

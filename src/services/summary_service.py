@@ -1,5 +1,5 @@
 from src.schemas.summary_schema import SummaryRequest, SummaryResponse
-from src.adapters.llm_summary import generate_summary_from_cpu_model
+from src.adapters.llm_summary import generate_summary
 
 def get_summary_prompt(mode: str) -> str:
     if mode == "feedback":
@@ -40,7 +40,7 @@ async def generate_summary(req: SummaryRequest) -> SummaryResponse:
     })
 
     # CPU용 요약 모델 호출
-    summary = await generate_summary_from_cpu_model(messages)
+    summary = await generate_summary(messages)
 
     return SummaryResponse(
         sessionId=req.sessionId,

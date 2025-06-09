@@ -19,3 +19,8 @@ Streamlit
 streamlit run app.py --server.port 8501
 ```
 
+conda
+```
+& "C:\Users\dodam\anaconda3\shell\condabin\conda-hook.ps1"
+conda activate py311
+```
