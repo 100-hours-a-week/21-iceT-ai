@@ -1,0 +1,50 @@
+# 백준 인증 쿠키 (자동 제출/크롤링용)
+BOJ_COOKIE_ONLINEJUDGE=YOUR_API_KEY_HERE
+BOJ_COOKIE_AUTOLOGIN=YOUR_API_KEY_HERE
+
+# 데이터베이스 설정
+DB_NAME=koco           # 데이터베이스 이름
+DB_USER=user1          # 사용자명
+DB_PASS=koco           # 비밀번호
+
+# 백엔드 API 서버 주소
+BACKEND_URL="https://ktbkoco.com/api/backend/v1/solution"
+
+# vLLM 설정 (로컬 LLM 호출)
+VLLM_MODEL=Qwen/Qwen2.5-Coder-7B-Instruct
+VLLM_URL=http://localhost:8001/v1/chat/completions
+VLLM_SUMMARY_MODEL=qwen1.5-1.8b-chat
+VLLM_SUMMARY_URL=http://localhost:1234/v1/chat/completions
+
+USE_UPSTAGE=True
+UPSTAGE_MODEL=solar-pro
+UPSTAGE_SUMMARY_MODEL=solar-pro2
+UPSTAGE_API_KEY=YOUR_API_KEY_HERE
+
+USE_GEMINI=True
+GEMINI_MODEL=gemini-2.5-flash-preview-05-20-pro
+GEMINI_API_KEY=YOUR_API_KEY_HERE
+
+# GCS 및 FAISS 인덱스 경로
+GCS_BUCKET=koco-bucket
+GCS_PREFIX=vector/faiss_index
+
+LOCAL_INDEX_DIR=/home/ubuntu/21-iceT-ai/vector/faiss_index
+VECTOR_STORE_PATH=vector/faiss_index
+
+# GCP 인증 키 파일 경로
+GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/21-iceT-ai/secret/gcp_key.json
+
+# LangSmith 설정
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com/"
+LANGSMITH_API_KEY=YOUR_API_KEY_HERE
+LANGSMITH_PROJECT="koco"
+
+# 공통 하이퍼파라미터 설정
+SOL_TEMPERATURE=0.3
+SOL_MAX_TOKENS=8192
+CHAT_TEMPERATURE=0.3
+CHAT_MAX_TOKENS=8192
+SUMMARY_TEMPERATURE=0.3
+SUMMARY_MAX_TOKENS=2048

@@ -4,8 +4,10 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import ValidationError
-import logging
 from logging.handlers import RotatingFileHandler
+
+import logging
+import uvicorn
 import os
 
 from src.routers.v1.solution_router import router as solution_router
@@ -86,3 +88,6 @@ app.include_router(solution_router, prefix="/api/ai/v1")
 app.include_router(feedback_router, prefix="/api/ai/v2")
 app.include_router(interview_router, prefix="/api/ai/v2")
 app.include_router(summary_router, prefix="/api/ai/v2")
+
+if __name__ == "__main__":
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)

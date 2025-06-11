@@ -7,6 +7,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 프로젝트 루트 경로 계산
+CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, "..", ".."))
+
+# .env에서 상대경로를 가져오고, 절대경로로 변환
+local_index_relative = os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index")
+LOCAL_INDEX_DIR = os.path.join(BASE_DIR, local_index_relative)
+
 logger = logging.getLogger(__name__)
 
 def get_embedder():
@@ -18,7 +26,6 @@ def get_embedder():
 USE_GCS = os.getenv("USE_GCS_FOR_FAISS", "false").lower() == "true"
 GCS_BUCKET = os.getenv("GCS_BUCKET")
 GCS_PREFIX = os.getenv("GCS_PREFIX")
-LOCAL_INDEX_DIR = os.getenv("LOCAL_INDEX_DIR")
 
 def download_faiss_from_gcs():
     if os.path.exists(os.path.join(LOCAL_INDEX_DIR, "index.faiss")):
@@ -41,6 +48,7 @@ def download_faiss_from_gcs():
 
 def load_vectorstore():
     try:
+        print(f"🧭 FAISS 인덱스 경로: {LOCAL_INDEX_DIR}")
         if not LOCAL_INDEX_DIR:
             raise ValueError("LOCAL_INDEX_DIR 환경변수가 설정되지 않았습니다.")
 
@@ -55,6 +63,7 @@ def load_vectorstore():
             embeddings=embedder,
             allow_dangerous_deserialization=True
         )
+    
 
     except Exception as e:
         logger.error(f"❌ 벡터스토어 로딩 오류: {e}")
