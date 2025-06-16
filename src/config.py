@@ -1,4 +1,5 @@
 # src/config.py
+import os
 from pydantic_settings import BaseSettings
 
 
@@ -31,7 +32,7 @@ class Settings(BaseSettings):
 
     # ✅ GCS 및 FAISS 설정
     use_gcs_for_faiss: bool = False
-    local_index_dir: str = "vector/faiss_index"
+    local_index_dir: str = os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index")
     gcs_bucket: str = ""
     gcs_prefix: str = ""
     vector_store_path: str = "vector/faiss_index"

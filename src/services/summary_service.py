@@ -32,6 +32,7 @@ def get_summary_prompt(mode: str) -> str:
 async def generate_summary(req: SummaryRequest) -> SummaryResponse:
     # ChatML history 구성 (dict 기반 안전 접근)
     messages = [{"role": m["role"], "content": m["content"]} for m in req.messages]
+    print("요약 입력 메시지:", messages)
     
     # System 프롬프트 삽입
     messages.insert(0, {

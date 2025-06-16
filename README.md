@@ -1,6 +1,8 @@
 # 21-iceT-ai
 가상환경
 ```
+py -3.12 -m venv venv
+
 .\venv\Scripts\Activate.ps1 
 ```
 

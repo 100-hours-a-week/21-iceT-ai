@@ -26,11 +26,11 @@ GEMINI_MODEL=gemini-2.5-flash-preview-05-20-pro
 GEMINI_API_KEY=YOUR_API_KEY_HERE
 
 # GCS 및 FAISS 인덱스 경로
+USE_GCS_FOR_FAISS=false
 GCS_BUCKET=koco-bucket
 GCS_PREFIX=vector/faiss_index
 
 LOCAL_INDEX_DIR=/home/ubuntu/21-iceT-ai/vector/faiss_index
-VECTOR_STORE_PATH=vector/faiss_index
 
 # GCP 인증 키 파일 경로
 GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/21-iceT-ai/secret/gcp_key.json

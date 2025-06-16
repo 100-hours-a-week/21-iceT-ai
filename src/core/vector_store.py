@@ -7,15 +7,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 # 프로젝트 루트 경로 계산
 CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, "..", ".."))
 
 # .env에서 상대경로를 가져오고, 절대경로로 변환
-local_index_relative = os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index")
-LOCAL_INDEX_DIR = os.path.join(BASE_DIR, local_index_relative)
-
-logger = logging.getLogger(__name__)
+index_path_raw  = os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index")
+if os.path.isabs(index_path_raw):
+    LOCAL_INDEX_DIR = index_path_raw
+else:
+    LOCAL_INDEX_DIR = os.path.normpath(os.path.join(BASE_DIR, index_path_raw))
 
 def get_embedder():
     return HuggingFaceEmbeddings(

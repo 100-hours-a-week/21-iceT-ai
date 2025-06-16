@@ -13,6 +13,7 @@ venv/
 .vscode/
 
 # 기타
+DB/*.csv
 .DS_Store
 logs/
 test_inference.py

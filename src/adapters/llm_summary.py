@@ -34,10 +34,12 @@ async def generate_summary_from_upstage(messages: List[dict]) -> str:
             temperature=settings.summary_temperature,
             max_tokens=settings.summary_max_tokens,
         )
+        
+        print("요약 응답 원문:", response.choices[0].message.content)
+
         return response.choices[0].message.content
     except Exception as e:
         raise RuntimeError(f"Upstage 요약 실패: {e}")
-
 
 # ✅ vLLM 요약 호출
 async def generate_summary_from_vllm(messages: List[dict]) -> str:
