@@ -1,5 +1,5 @@
 from src.schemas.summary_schema import SummaryRequest, SummaryResponse
-from src.adapters.llm_summary import generate_summary
+from src.adapters.llm_summary import generate_summary as call_llm_summary
 
 def get_summary_prompt(mode: str) -> str:
     if mode == "feedback":
@@ -30,21 +30,16 @@ def get_summary_prompt(mode: str) -> str:
         raise ValueError(f"알 수 없는 mode: {mode}")
 
 async def generate_summary(req: SummaryRequest) -> SummaryResponse:
-    # ChatML history 구성 (dict 기반 안전 접근)
-    messages = [{"role": m["role"], "content": m["content"]} for m in req.messages]
-    print("요약 입력 메시지:", messages)
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
     
-    # System 프롬프트 삽입
     messages.insert(0, {
         "role": "system",
         "content": get_summary_prompt(req.mode)
     })
 
-    # CPU용 요약 모델 호출
-    summary = await generate_summary(messages)
+    summary = await call_llm_summary(messages)
 
     return SummaryResponse(
         sessionId=req.sessionId,
         summary=summary.strip()
     )
-

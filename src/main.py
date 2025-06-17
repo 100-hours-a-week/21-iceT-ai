@@ -10,10 +10,10 @@ import logging
 import uvicorn
 import os
 
-from src.routers.v1.solution_router import router as solution_router
-from src.routers.v2.feedback_router import router as feedback_router
-from src.routers.v2.interview_router import router as interview_router
-from src.routers.v2.summary_router import router as summary_router
+from src.routers.solution_router import router as solution_router
+from src.routers.feedback_router import router as feedback_router
+from src.routers.interview_router import router as interview_router
+from src.routers.summary_router import router as summary_router
 
 app = FastAPI()
 

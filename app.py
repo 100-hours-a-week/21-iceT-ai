@@ -42,50 +42,44 @@ with st.form("start_form"):
 
     col1, col2 = st.columns([1, 3])
     with col1:
-        problem_number = st.number_input("문제 번호", value=1157, step=1)
+        problem_number = st.number_input("문제 번호", value=9251, step=1)
     with col2:
-        title = st.text_input("문제 제목", value="단어 공부")
+        title = st.text_input("문제 제목", value="LCS")
 
     description = st.text_area("문제 설명", value=(
-        "알파벳 대소문자로 이루어진 단어가 주어졌을 때, "
-        "가장 많이 사용된 알파벳을 출력하는 프로그램을 작성하시오. "
-        "단, 대문자와 소문자를 구분하지 않는다. "
-        "가장 많이 사용된 알파벳이 여러 개 존재하는 경우에는 ?를 출력한다."
+        "LCS(Longest Common Subsequence, 최장 공통 부분 수열) 문제는 두 수열이 주어졌을 때, "
+        "모두의 부분 수열이 되는 수열 중 가장 긴 것을 찾는 문제이다. "
+        "예를 들어 ACAYKP와 CAPCAK의 LCS는 ACAK가 된다."
     ), height=130)
 
     input_rule = st.text_area("입력 조건", value=(
-        "첫째 줄에 알파벳 대소문자로 이루어진 단어가 주어진다. "
-        "주어지는 단어는 1,000,000자를 넘지 않는다."
+        "첫째 줄과 둘째 줄에 각각 두 문자열이 주어진다. "
+        "문자열은 알파벳 대문자로 이루어져 있으며, 최대 1000글자이다."
     ), height=80)
 
     output_rule = st.text_area("출력 조건", value=(
-        "첫째 줄에 이 단어에서 가장 많이 사용된 알파벳을 출력한다. "
-        "단, 가장 많이 사용된 알파벳이 여러 개 존재하는 경우에는 ?를 출력한다."
+        "첫째 줄에 입력된 두 문자열의 LCS의 길이를 출력한다."
     ), height=80)
 
-    input_example = st.text_input("입력 예시", value="Mississipi")
-    output_example = st.text_input("출력 예시", value="?")
+    input_example = st.text_input("입력 예시", value="ACAYKP\nCAPCAK")
+    output_example = st.text_input("출력 예시", value="4")
 
     code = st.text_area("사용자 제출 코드", value=(
-        'word = input().upper()\n'
-        'counter = {}\n'
-        'for ch in word:\n'
-        '    if ch in counter:\n'
-        '        counter[ch] += 1\n'
-        '    else:\n'
-        '        counter[ch] = 1\n\n'
-        'max_count = max(counter.values())\n'
-        'result = [k for k, v in counter.items() if v == max_count]\n\n'
-        'if len(result) > 1:\n'
-        '    print("?")\n'
-        'else:\n'
-        '    print(result[0])'
+        'a = input().strip()\n'
+        'b = input().strip()\n'
+        'dp = [[0] * (len(b)+1) for _ in range(len(a)+1)]\n\n'
+        'for i in range(1, len(a)+1):\n'
+        '    for j in range(1, len(b)+1):\n'
+        '        if a[i-1] == b[j-1]:\n'
+        '            dp[i][j] = dp[i-1][j-1] + 1\n'
+        '        else:\n'
+        '            dp[i][j] = max(dp[i-1][j], dp[i][j-1])\n\n'
+        'print(dp[len(a)][len(b)])'
     ), height=220)
 
     language = st.selectbox("프로그래밍 언어", ["python", "cpp", "java"], index=0)
 
     submitted = st.form_submit_button("🚀 START 요청 보내기")
-
 
 if submitted and not st.session_state.started:
     st.session_state.start_payload = {

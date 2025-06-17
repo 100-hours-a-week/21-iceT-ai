@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     # ▶️ Upstage 설정
     use_upstage: bool = True
     upstage_model: str = "solar-pro"
-    upstage_summary_model: str = "solar-pro2"
+    upstage_summary_model: str = "solar-pro"
     upstage_api_key: str = ""
     upstage_base_url: str = "https://api.upstage.ai/v1"
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     chat_temperature: float = 0.3
     chat_max_tokens: int = 8192
     summary_temperature: float = 0.3
-    summary_max_tokens: int = 2048
+    summary_max_tokens: int = 8192
 
     # ✅ GCS 및 FAISS 설정
     use_gcs_for_faiss: bool = False

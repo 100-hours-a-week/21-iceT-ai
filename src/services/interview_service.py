@@ -4,8 +4,8 @@ from src.schemas.interview_schema import (
     InterviewAnswerRequest, InterviewAnswerResponse,
     InterviewEndRequest, InterviewEndResponse, InterviewEnd
 )
-from src.core.prompt_templates import format_interview_start_prompt
-from src.core.prompt_builders import build_prompt_from_memory
+from src.core.prompt_templates import format_interview_start_prompt, format_interview_followup_prompt, format_interview_review_prompt  
+from src.core.prompt_builders import build_interview_followup_prompt, build_interview_review_prompt
 from src.config import settings
 import json
 
@@ -32,7 +32,7 @@ async def generate_first_question(req: InterviewStartRequest) -> InterviewStartR
 
 # 2. 꼬리 질문 생성
 async def generate_followup_question(req: InterviewAnswerRequest) -> InterviewAnswerResponse:
-    prompt = build_prompt_from_memory(req.messages, req.summary, recent_turns=3, mode="interview")
+    prompt = build_interview_followup_prompt(req.messages, req.summary, recent_turns=3)
     messages = [
         {"role": "system", "content": "You are a mock technical interviewer. Ask only one follow-up question."},
         {"role": "user", "content": prompt}
@@ -50,17 +50,17 @@ async def generate_followup_question(req: InterviewAnswerRequest) -> InterviewAn
 
 # 3. 면접 총평 생성
 async def generate_interview_end(req: InterviewEndRequest) -> InterviewEndResponse:
-    chatml_history = [{"role": m.role, "content": m.content} for m in req.messages]
+    prompt = build_interview_review_prompt(req.messages, req.summary)
 
-    chatml_history.insert(0, {
-        "role": "system",
-        "content": "You are a technical interviewer. Summarize the interview in the following JSON format only:\n"
-                   '{ "good": [...], "bad": [...], "improvement": [...] }'
-    })
+    messages = [
+        {"role": "system", "content": "You are a technical interviewer."},
+        {"role": "user", "content": prompt}
+    ]
 
     if settings.use_upstage:
-        return await generate(chatml_history, schema_class=InterviewEndResponse)
+        return await generate(messages, schema_class=InterviewEndResponse)
     else:
-        raw_output = await generate(chatml_history)
+        raw_output = await generate(messages)
         parsed = json.loads(raw_output.strip().strip("```json").strip("```"))
         return InterviewEndResponse(review=InterviewEnd(**parsed))
+
