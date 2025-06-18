@@ -66,14 +66,16 @@ def login_with_cookies(driver):
 # ✅ 오늘의 워크북 ID 가져오기
 def get_today_workbook_id(driver) -> int:
     driver.get(GROUP_URL)
+    n=0
     try:
-        row = driver.find_element(By.CSS_SELECTOR, "table tbody tr")
-        link = row.find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
+        rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
+        if len(rows) <= n:
+            raise RuntimeError(f"{n}번째 워크북이 존재하지 않습니다.")
+        link = rows[n].find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
         href = link.get_attribute("href")
         return int(href.split("/")[-1])
     except NoSuchElementException:
-        raise RuntimeError("오늘의 워크북을 찾을 수 없습니다.")
-
+        raise RuntimeError(f"{n}번째 워크북을 찾을 수 없습니다.")
 
 # ✅ 워크북에서 문제 ID 리스트 추출
 def get_problem_ids_from_workbook(driver, group_id: int, workbook_id: int) -> list[int]:

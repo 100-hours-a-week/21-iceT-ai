@@ -34,13 +34,29 @@ async def explain_feedback(req: FeedbackRequest) -> FeedbackResponse:
             improvedCode=parsed["improved_code"]
         )
 
+# 2. /feedback/answer: 피드백 질문에 대한 답변 생성
 async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswerResponse:
     if not any(m.role == "user" for m in req.messages):
         raise ValueError("대화에 사용자 메시지가 최소 1개는 포함되어야 합니다.")
 
-    prompt = build_prompt_from_memory(req.messages, req.summary, recent_turns=5, mode="feedback")
+        # summary가 JSON list인지 확인
+    summary_data = req.summary
+    if isinstance(summary_data, str):
+        try:
+            import json
+            summary_data = json.loads(summary_data)
+        except:
+            summary_data = [{"speaker": "ai", "content": summary_data}]
 
-    # 💬 역할 강조 + 반복 방지 + JSON 지시
+    prompt = build_prompt_from_memory(
+    messages=req.messages,
+    static_summary=req.staticSummary,
+    dynamic_summary=req.summary,
+    recent_turns=5,
+    mode="feedback"
+)
+
+    # 역할 강조 + 반복 방지 + JSON 지시
     system_prompt = (
         "너는 사용자의 코드에 대해 대화를 이어가는 **친절하지만 똑똑한 코드 리뷰어**야.\n"
         "- 사용자의 이전 질문을 반복해서 답하지 마.\n"
@@ -49,7 +65,7 @@ async def answer_feedback_question(req: FeedbackAnswerRequest) -> FeedbackAnswer
         "- 항상 JSON 형식으로 `{ \"answer\": \"...\" }` 만 응답해."
     )
 
-    # 🧠 요약 삽입
+    # 요약 삽입
     if req.summary:
         system_prompt += f"\n\n📝 이전 대화 요약: {req.summary.strip()}"
 

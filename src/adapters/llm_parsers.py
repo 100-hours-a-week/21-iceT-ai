@@ -9,7 +9,7 @@ from src.schemas.interview_schema import (
     InterviewAnswerResponse, InterviewEnd, InterviewEndResponse
 )
 from src.schemas.solution_schema import SolutionResponse
-from src.schemas.summary_schema import SummaryResponse
+from src.schemas.summary_schema import TurnSummaryResponse
 
 
 # ✅ 공통 유틸
@@ -78,10 +78,10 @@ def parse_solution_response(raw_output: str) -> SolutionResponse:
 
 
 # ✅ 요약 응답
-def parse_summary_response(raw_output: str, session_id: str) -> SummaryResponse:
+def parse_summary_response(raw_output: str, session_id: str) -> TurnSummaryResponse:
     parsed = parse_json_from_llm_output(raw_output)
     validate_keys(parsed, ["summary"])
-    return SummaryResponse(sessionId=session_id, summary=parsed["summary"])
+    return TurnSummaryResponse(sessionId=session_id, summary=parsed["summary"])
 
 
 # ✅ 파서 레지스트리
@@ -92,5 +92,5 @@ SCHEMA_PARSERS = {
     InterviewAnswerResponse: parse_interview_answer_response,
     InterviewEndResponse: parse_interview_end_response,
     SolutionResponse: parse_solution_response,
-    SummaryResponse: parse_summary_response,
+    TurnSummaryResponse: parse_summary_response,
 }

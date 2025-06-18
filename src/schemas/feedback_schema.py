@@ -26,9 +26,10 @@ class Message(BaseModel):
     content: str = Field(description="메시지 내용")
 
 class FeedbackAnswerRequest(BaseModel):
-    sessionId: str
-    messages: List[Message]
+    sessionId: str = Field(description="챗 세션 ID")
+    messages: List[Message] = Field(description="대화 메시지 리스트")
     summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
+    staticSummary: Optional[str] = Field(default=None, description="문제 정보 요약 (고정, 선택사항)")
 
 class FeedbackAnswerResponse(BaseModel):
     sessionId: str = Field(description="챗 세션 ID")

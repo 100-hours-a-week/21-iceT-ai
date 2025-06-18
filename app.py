@@ -2,7 +2,7 @@ import streamlit as st
 import httpx
 import uuid
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_URL = "http://localhost:8000/api/ai/v2"
@@ -95,28 +95,43 @@ if submitted and not st.session_state.started:
         "code": code
     }
 
-    endpoint = "/feedback/start" if st.session_state.mode == "feedback" else "/interview/start"
-    res = httpx.post(f"{BASE_URL}{endpoint}", json=st.session_state.start_payload, timeout=60.0)
-    response = res.json()
+    endpoint = (
+    "/feedback/start-stream"
+    if st.session_state.mode == "feedback"
+    else "/interview/start"
+    )
 
-    # ✅ 개선된 코드 마크다운 블록 감싸기
-    improved_code = response.get("improvedCode", "").strip()
-    language = st.session_state.start_payload.get("codeLanguage", "python")
-    if not improved_code.startswith("```"):
-        improved_code = f"```{language}\n{improved_code}\n```"
-
-    # ✅ 어시스턴트 메시지 포맷
     if st.session_state.mode == "feedback":
-        assistant_msg = (
-            f"**✅ 잘한 점**\n" +
-            "\n".join(f"- {item}" for item in response.get("good", [])) +
-            "\n\n**⚠️ 개선할 점**\n" +
-            "\n".join(f"- {item}" for item in response.get("bad", [])) +
-            f"\n\n**🔧 개선된 코드**\n\n{improved_code}"
-        )
-    else:
-        assistant_msg = response.get("question", "")
+        with st.spinner("🧠 AI가 피드백을 작성 중입니다..."):
+            response_placeholder = st.empty()
+            full_response = ""
 
+            with httpx.stream(
+                "POST",
+                f"{BASE_URL}{endpoint}",
+                json=st.session_state.start_payload,
+                timeout=300.0,
+                headers={"Accept": "text/event-stream"},
+            ) as res:
+                for line in res.iter_lines():
+                    if line.startswith("data: "):
+                        token = line.replace("data: ", "")
+                        full_response += token
+                        response_placeholder.markdown(full_response)
+
+            assistant_msg = full_response
+    else:
+        # 인터뷰는 기존 방식 유지
+        res = httpx.post(f"{BASE_URL}{endpoint}", json=st.session_state.start_payload, timeout=60.0)
+        assistant_msg = res.json().get("question", "")
+
+    # ✅ stream 응답 전체를 그대로 사용
+    assistant_msg = full_response.strip()
+
+    # ✅ 개선된 코드 블록 자동 감싸기 (선택)
+    language = st.session_state.start_payload.get("codeLanguage", "python")
+    if "```" not in assistant_msg and "def " in assistant_msg:
+        assistant_msg += f"\n\n```{language}\n{assistant_msg}\n```"
 
     user_msg = (
         f"📘 **문제 제목**: {title}\n\n"
@@ -136,7 +151,7 @@ if submitted and not st.session_state.started:
         "sessionId": st.session_state.session_id,
         "problemNumber": 1000,
         "title": title,
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     })
 
     append_csv(record_csv, {
@@ -144,14 +159,14 @@ if submitted and not st.session_state.started:
         "turn": st.session_state.turn,
         "role": "user",
         "content": st.session_state.messages[0]["content"],
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     })
     append_csv(record_csv, {
         "sessionId": st.session_state.session_id,
         "turn": st.session_state.turn,
         "role": "assistant",
         "content": st.session_state.messages[1]["content"],
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     })
 
     st.session_state.turn += 1
@@ -168,7 +183,7 @@ if st.session_state.started:
             "turn": st.session_state.turn,
             "role": "user",
             "content": user_input,
-            "createdAt": datetime.utcnow().isoformat()
+            "createdAt": datetime.now(timezone.utc).isoformat()
         })
 
         # 피드백/면접 구분
@@ -178,8 +193,26 @@ if st.session_state.started:
                 "messages": st.session_state.messages,
                 "summary": None
             }
-            res = httpx.post(f"{BASE_URL}/feedback/answer", json=payload, timeout=60.0)
-            answer = res.json()["answer"]
+
+            # ✅ 스트리밍 응답 받기
+            with st.spinner("✍️ AI가 피드백을 작성 중입니다..."):
+                response_placeholder = st.empty()
+                full_response = ""
+
+                with httpx.stream(
+                    "POST",
+                    f"{BASE_URL}/feedback/answer-stream",
+                    json=payload,
+                    timeout=300.0,
+                    headers={"Accept": "text/event-stream"},
+                ) as res:
+                    for line in res.iter_lines():
+                        if line.startswith("data: "):
+                            token = line.replace("data: ", "")
+                            full_response += token
+                            response_placeholder.markdown(full_response)
+
+                answer = full_response
         else:
             payload = {
                 "sessionId": st.session_state.session_id,
@@ -194,7 +227,7 @@ if st.session_state.started:
             "turn": st.session_state.turn,
             "role": "assistant",
             "content": answer,
-            "createdAt": datetime.utcnow().isoformat()
+            "createdAt": datetime.now(timezone.utc).isoformat()
         })
 
         # 5턴마다 요약
@@ -212,7 +245,7 @@ if st.session_state.started:
                 "sessionId": st.session_state.session_id,
                 "turn": st.session_state.turn,
                 "summary": summary_text,
-                "createdAt": datetime.utcnow().isoformat()
+                "createdAt": datetime.now(timezone.utc).isoformat()
             })
 
             st.info(f"🧠 요약 생성됨 (TURN {st.session_state.turn})\n\n{summary_text}")

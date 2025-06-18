@@ -4,6 +4,7 @@ import httpx
 import json
 from openai import OpenAI
 from pydantic import BaseModel
+from typing import AsyncGenerator
 
 from src.config import settings
 from src.adapters.llm_parsers import (
@@ -17,6 +18,34 @@ def to_messages(prompt_or_messages):
     if isinstance(prompt_or_messages, str):
         return [{"role": "user", "content": prompt_or_messages}]
     return prompt_or_messages
+
+# 파일 상단 import 추가
+from typing import AsyncGenerator
+
+# 새로운 함수 추가
+async def stream_generate(prompt_or_messages) -> AsyncGenerator[str, None]:
+    messages = to_messages(prompt_or_messages)
+
+    # Upstage OpenAI client
+    client = OpenAI(
+        api_key=settings.upstage_api_key,
+        base_url="https://api.upstage.ai/v1"
+    )
+
+    # 스트리밍 호출
+    stream = client.chat.completions.create(
+        model=settings.upstage_model,
+        messages=messages,
+        temperature=settings.chat_temperature,
+        max_tokens=settings.chat_max_tokens,
+        stream=True  # ✅ 핵심 옵션
+    )
+
+    # 스트리밍된 토큰을 하나씩 yield
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
+
 
 
 # ✅ Upstage / vLLM 공통 호출 인터페이스

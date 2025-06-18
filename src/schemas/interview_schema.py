@@ -27,14 +27,16 @@ class InterviewAnswerRequest(BaseModel):
     sessionId: str
     messages: List[Message]
     summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
+    staticSummary: Optional[str] = Field(default=None, description="문제 정보 요약 (고정)")
 
 class InterviewAnswerResponse(BaseModel):
     sessionId: str = Field(description="면접 세션 ID")
-    question: str = Field(description="AI가 생성한 꼬리 질문")
+    question: str = Field(description="AI가 생성한 꼬리 질문")    
 
 class InterviewEndRequest(BaseModel):
     sessionId: str = Field(description="면접 세션 ID")
     messages: List[Message] = Field(description="면접 전체 대화 기록")
+    staticSummary: Optional[str] = Field(default=None, description="문제 정보 요약 (고정)")
 
 class InterviewEnd(BaseModel):
     good: List[str] = Field(description="잘한 점")
