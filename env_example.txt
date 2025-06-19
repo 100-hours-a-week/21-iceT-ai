@@ -1,50 +1,35 @@
-# 백준 인증 쿠키 (자동 제출/크롤링용)
-BOJ_COOKIE_ONLINEJUDGE=YOUR_API_KEY_HERE
-BOJ_COOKIE_AUTOLOGIN=YOUR_API_KEY_HERE
+# 🔄 스위칭
+USE_VLLM=false
 
-# 데이터베이스 설정
-DB_NAME=koco           # 데이터베이스 이름
-DB_USER=user1          # 사용자명
-DB_PASS=koco           # 비밀번호
+# 🔐 백준 인증 쿠키
+BOJ_COOKIE_ONLINEJUDGE=
+BOJ_COOKIE_AUTOLOGIN=
 
-# 백엔드 API 서버 주소
-BACKEND_URL="https://ktbkoco.com/api/backend/v1/solution"
+# 🔐 데이터베이스 설정
+DB_NAME=
+DB_USER=
+DB_PASS=
 
-# vLLM 설정 (로컬 LLM 호출)
-VLLM_MODEL=Qwen/Qwen2.5-Coder-7B-Instruct
-VLLM_URL=http://localhost:8001/v1/chat/completions
-VLLM_SUMMARY_MODEL=qwen1.5-1.8b-chat
-VLLM_SUMMARY_URL=http://localhost:1234/v1/chat/completions
+# 🔐 백엔드 API 서버 주소
+BACKEND_URL=
 
-USE_UPSTAGE=True
-UPSTAGE_MODEL=solar-pro
-UPSTAGE_SUMMARY_MODEL=solar-pro2
-UPSTAGE_API_KEY=YOUR_API_KEY_HERE
+# 🔐 Upstage API 키 (최대 20개까지 사용 가능)
+UPSTAGE_KEY_1=
+UPSTAGE_KEY_2=
+UPSTAGE_KEY_3=
+UPSTAGE_KEY_4=
+UPSTAGE_KEY_5=
+UPSTAGE_KEY_6=
+UPSTAGE_KEY_7=
+UPSTAGE_KEY_8=
+UPSTAGE_KEY_9=
+UPSTAGE_KEY_10=
 
-USE_GEMINI=True
-GEMINI_MODEL=gemini-2.5-flash-preview-05-20-pro
-GEMINI_API_KEY=YOUR_API_KEY_HERE
+# 🔐 Gemini API 키
+GEMINI_API_KEY=
 
-# GCS 및 FAISS 인덱스 경로
-USE_GCS_FOR_FAISS=false
-GCS_BUCKET=koco-bucket
-GCS_PREFIX=vector/faiss_index
-
-LOCAL_INDEX_DIR=/home/ubuntu/21-iceT-ai/vector/faiss_index
-
-# GCP 인증 키 파일 경로
-GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/21-iceT-ai/secret/gcp_key.json
-
-# LangSmith 설정
-LANGSMITH_TRACING=true
-LANGSMITH_ENDPOINT="https://api.smith.langchain.com/"
-LANGSMITH_API_KEY=YOUR_API_KEY_HERE
-LANGSMITH_PROJECT="koco"
-
-# 공통 하이퍼파라미터 설정
-SOL_TEMPERATURE=0.3
-SOL_MAX_TOKENS=8192
-CHAT_TEMPERATURE=0.3
-CHAT_MAX_TOKENS=8192
-SUMMARY_TEMPERATURE=0.3
-SUMMARY_MAX_TOKENS=2048
+# 🔐 GCP 및 GCS 정보
+GOOGLE_APPLICATION_CREDENTIALS=
+GCS_BUCKET=
+GCS_PREFIX=
+USE_GCS_FOR_FAISS=

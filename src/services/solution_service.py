@@ -28,4 +28,6 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
 
     # LLM에 프롬프트 전송하여 해설 생성
     result = await generate_solution(prompt)
+
+    print(f"Generated solution for problem {req.problemNumber}:\n{result}")
     return result

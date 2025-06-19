@@ -18,7 +18,7 @@ python -m src.main
 streamlit run app.py --server.port 8501
 ```
 
-**Colab + ngrok**
+**env**
 ```
-Remove-Item Env:VLLM_URL
+Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 ```

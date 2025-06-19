@@ -36,12 +36,17 @@ async def main_async(pids, driver):
 # 진입점
 if __name__ == "__main__":
     GROUP_ID = 23567
+    print ("🚀 드라이버 생성 시작")
     driver = create_driver()
+    print ("✅ 드라이버 생성 완료")
 
     try:
         login_with_cookies(driver)
+        print("🔐 로그인 완료")
         today_wb_id = get_today_workbook_id(driver)
+        print(f"📘 오늘의 워크북 ID: {today_wb_id}")
         pids = get_problem_ids_from_workbook(driver, group_id=GROUP_ID, workbook_id=today_wb_id)
+        print(f"📑 오늘의 문제 ID 목록: {pids}")
         asyncio.run(main_async(pids, driver))
 
     except Exception as e:

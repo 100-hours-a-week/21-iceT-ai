@@ -94,3 +94,6 @@ SCHEMA_PARSERS = {
     SolutionResponse: parse_solution_response,
     TurnSummaryResponse: parse_summary_response,
 }
+
+def estimate_tokens(messages: list[dict]) -> int:
+    return sum(len(m["content"]) // 4 for m in messages) + 100

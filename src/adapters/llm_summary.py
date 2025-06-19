@@ -1,34 +1,40 @@
 # src/adapters/llm_summary.py
-import asyncio
+
 import json
 import httpx
 from typing import List
 from openai import OpenAI
+
 from src.config import settings
 from src.schemas.summary_schema import TurnSummaryResponse, TurnSummary
 
+
 def to_prompt(messages: List[dict]) -> str:
     return "\n".join(
-        f"{m['role'].capitalize()}: {m['content']}" for m in messages if m["role"] in {"user", "assistant"}
+        f"{m['role'].capitalize()}: {m['content']}"
+        for m in messages
+        if m["role"] in {"user", "assistant"}
     )
 
 
-# ✅ 요약 전용 분기 처리
-async def generate_summary(messages: List[dict]) -> str:
-    if settings.use_upstage:
-        return await generate_summary_from_upstage(messages)
+# ✅ 요약 생성 분기 (Upstage vs vLLM)
+async def generate_summary(messages: List[dict], session_id: str) -> TurnSummaryResponse:
+    if not settings.use_vllm:
+        return await generate_summary_from_upstage(messages, session_id)
     else:
-        return await generate_summary_from_vllm(messages)
+        return await generate_summary_from_vllm(messages, session_id)
 
 
-# ✅ Upstage 요약 호출
-async def generate_summary_from_upstage(messages: List[dict], session_id: str) -> TurnSummaryResponse:
+# ✅ Upstage 요약 호출 (Structured Output)
+async def generate_summary_from_upstage(
+    messages: List[dict], session_id: str
+) -> TurnSummaryResponse:
     client = OpenAI(
         api_key=settings.upstage_api_key,
         base_url=settings.upstage_base_url
     )
 
-    base_schema = TurnSummary.model_json_schema()  # Pydantic → JSON Schema
+    base_schema = TurnSummary.model_json_schema()
 
     response_format = {
         "type": "json_schema",
@@ -56,12 +62,9 @@ async def generate_summary_from_upstage(messages: List[dict], session_id: str) -
             temperature=settings.summary_temperature,
             max_tokens=settings.summary_max_tokens,
         )
-        
-        raw_content = response.choices[0].message.content.strip()
-        print("🔍 Upstage 응답 내용:", repr(raw_content))
-        parsed = json.loads(raw_content)
 
-        # Pydantic 객체로 파싱
+        raw_content = response.choices[0].message.content.strip()
+        parsed = json.loads(raw_content)
         structured = [TurnSummary(**item) for item in parsed]
 
         return TurnSummaryResponse(sessionId=session_id, summary=structured)
@@ -69,8 +72,11 @@ async def generate_summary_from_upstage(messages: List[dict], session_id: str) -
     except Exception as e:
         raise RuntimeError(f"Upstage 요약 실패: {e}")
 
-# ✅ vLLM 요약 호출
-async def generate_summary_from_vllm(messages: List[dict], session_id: str) -> TurnSummaryResponse:
+
+# ✅ vLLM 요약 호출 (plain JSON 반환)
+async def generate_summary_from_vllm(
+    messages: List[dict], session_id: str
+) -> TurnSummaryResponse:
     async with httpx.AsyncClient() as client:
         response = await client.post(
             settings.vllm_summary_url,
@@ -83,7 +89,9 @@ async def generate_summary_from_vllm(messages: List[dict], session_id: str) -> T
             timeout=240.0
         )
         response.raise_for_status()
+
         raw_content = response.json()["choices"][0]["message"]["content"].strip()
         parsed = json.loads(raw_content)
         structured = [TurnSummary(**item) for item in parsed]
+
         return TurnSummaryResponse(sessionId=session_id, summary=structured)

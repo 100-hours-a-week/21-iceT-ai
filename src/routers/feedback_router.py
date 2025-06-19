@@ -53,8 +53,7 @@ async def feedback_answer_stream(req: FeedbackAnswerRequest):
     # 4. system prompt 구성
     system_prompt = (
         "너는 사용자의 코드에 대해 대화를 이어가는 **친절하지만 똑똑한 코드 리뷰어**야.\n"
-        "- 사용자의 이전 질문을 반복해서 답하지 마.\n"
-        "- 필요하면 코드블럭으로 예시 코드를 제공해.\n"
+        "- 이전 대화 요약을 참고해서 대화를 자연스럽게 이어가.\n"
         "- 사용자가 무엇을 물었는지 명확히 파악하고, 그 의도에 맞게 구체적인 정보를 줘.\n"
         "- JSON 응답은 필요 없어. 그냥 자연스럽게 stream 방식으로 말해줘."
     )

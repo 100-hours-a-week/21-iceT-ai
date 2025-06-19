@@ -16,4 +16,4 @@ venv/
 DB/*.csv
 .DS_Store
 logs/
-test_inference.py
+mock/

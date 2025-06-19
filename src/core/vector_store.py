@@ -51,7 +51,6 @@ def download_faiss_from_gcs():
 
 def load_vectorstore():
     try:
-        print(f"🧭 FAISS 인덱스 경로: {LOCAL_INDEX_DIR}")
         if not LOCAL_INDEX_DIR:
             raise ValueError("LOCAL_INDEX_DIR 환경변수가 설정되지 않았습니다.")
 
