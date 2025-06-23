@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from src.schemas.interview_schema import InterviewStartRequest, InterviewfollowRequest, InterviewEndRequest, InterviewEnd
+from src.schemas.interview_schema import InterviewStartRequest, InterviewfollowRequest, InterviewEndRequest
 from src.services.interview_service import (
     handle_interview_start,
     handle_interview_answer,

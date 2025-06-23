@@ -62,38 +62,6 @@ SOLUTION_PROMPT = PromptTemplate(
     ],
 )
 
-SUMMARY_PROMPT = PromptTemplate(
-    template="""
-당신은 긴 대화 이력을 요약하는 AI입니다.
-아래의 대화 목록을 참고하여 각 발화의 의도와 내용을 간결하게 요약해 주세요.
-
-- 각 발화는 "speaker", "intent", "content" 세 필드로 구성된 JSON 리스트로 반환하세요.
-- 최대 {max_sentences}문장 이내로 요약하세요.
-- mode: {mode}
-- staticSummary: {static_summary}
-
-대화 목록:
-{messages}
-
-반드시 아래와 같은 JSON 리스트만 반환하세요:
-[
-  {{
-    "speaker": "user" 또는 "ai",
-    "intent": "발화 의도",
-    "content": "요약된 발화 내용"
-  }},
-  ...
-]
-""",
-    input_variables=[
-        "session_id",
-        "messages",
-        "max_sentences",
-        "mode",
-        "static_summary",
-    ],
-)
-
 FEEDBACK_START_PROMPT = PromptTemplate(
     input_variables=["problem", "code", "language"],
     template="""

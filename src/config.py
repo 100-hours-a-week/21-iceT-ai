@@ -11,7 +11,13 @@ class Settings(BaseSettings):
 
     model_chat: str = "solar-pro"
     temperature_chat: float = 0.3
-    max_tokens_chat: int = 8192
+    
+    max_tokens_feedback_start: int = 2048
+    max_tokens_feedback_answer: int = 1024
+    max_tokens_interview_start: int = 512
+    max_tokens_interview_answer: int = 1024
+    max_tokens_interview_end: int = 2048
+    max_tokens_summary: int = 768
 
     model_config = {"protected_namespaces": ("settings_",)}
 

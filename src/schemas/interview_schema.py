@@ -1,34 +1,28 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 
 class Message(BaseModel):
     role: str = Field(description='"user" 또는 "assistant" 역할')
     content: str = Field(description="메시지 내용")
 
 class InterviewStartRequest(BaseModel):
-    sessionId: str = Field(description="면접 세션 ID")
-    problemNumber: int = Field(description="문제 번호")
-    title: str = Field(description="문제 제목")
-    description: str = Field(description="문제 설명")
-    inputRule: str = Field(description="입력 조건 설명")
-    outputRule: str = Field(description="출력 조건 설명")
-    inputExample: str = Field(description="입력 예시")
-    outputExample: str = Field(description="출력 예시")
-    codeLanguage: str = Field(description="프로그래밍 언어 (예: python, cpp, java)")
-    code: str = Field(description="사용자 제출 코드")
+    sessionId: str
+    problemNumber: int
+    title: str
+    description: str
+    inputDescription: str
+    outputDescription: str
+    inputExample: str
+    outputExample: str
+    codeLanguage: str
+    code: str
 
 class InterviewfollowRequest(BaseModel):
     sessionId: str
     messages: List[Message]
-    summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
-    staticSummary: Optional[str] = Field(default=None, description="문제 정보 요약 (고정)")
+    summary: str  # JSON string. 문제+대화 요약 모두 포함 ("type": "problem" / "chat")
 
 class InterviewEndRequest(BaseModel):
-    sessionId: str = Field(description="면접 세션 ID")
-    messages: List[Message] = Field(description="면접 전체 대화 기록")
-    staticSummary: Optional[str] = Field(default=None, description="문제 정보 요약 (고정)")
-
-class InterviewEnd(BaseModel):
-    good: List[str] = Field(description="잘한 점")
-    bad: List[str] = Field(description="부족했던 점")
-    improvement: List[str] = Field(description="개선 사항 제안")
+    sessionId: str
+    messages: List[Message]
+    summary: str  # 위와 동일하게 통합

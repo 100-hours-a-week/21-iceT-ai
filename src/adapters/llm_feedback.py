@@ -12,12 +12,13 @@ client = OpenAI(
     base_url="https://api.upstage.ai/v1"
 )
 
-async def call_feedback_llm(prompt: str, stream: bool = True):
+async def call_feedback_llm(prompt: str, stream: bool = True, max_tokens: int = None):
+    max_tokens = max_tokens or settings.max_tokens_chat  # fallback
     try:
         response = client.chat.completions.create(
             model=settings.model_chat,
             temperature=settings.temperature_chat,
-            max_tokens=settings.max_tokens_chat,
+            max_tokens=max_tokens,
             messages=[{"role": "user", "content": prompt}],
             stream=stream
         )
