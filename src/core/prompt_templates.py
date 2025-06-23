@@ -1,7 +1,6 @@
-# src/core/prompt_templates.py
 from langchain_core.prompts import PromptTemplate
 
-# ✅ 문제 해설 프롬프트
+# 백준 문제 정보를 기반으로 해설을 생성하는 프롬프트 템플릿
 SOLUTION_PROMPT = PromptTemplate(
     template="""
     당신은 백준 문제에 대한 해설을 구조화된 형식으로 생성하는 AI입니다.
@@ -14,12 +13,12 @@ SOLUTION_PROMPT = PromptTemplate(
     해설 출력 순서는 다음과 같습니다.
     {{
         "problemNumber": int,
-        "problemCheck": {{
-            "problemDescription": str,  // 문제 개요, 즉 문제 목표와 조건을 요약
+        "problem_check": {{
+            "problem_description": str,  // 문제 개요, 즉 문제 목표와 조건을 요약
             "algorithm": str             // 알고리즘 이름 + 정의 + 작동 방식 + 시간복잡도 (참고 문서에 해당 알고리즘이 존재하는 경우 반드시 참고 문서에 기반하여 기술)
         }},
-        "problemSolving": str,        // 단계별 구체적인 풀이 전략 설명
-        "solutionCode": {{
+        "problem_solving": str,        // 단계별 구체적인 풀이 전략 설명
+        "solution_code": {{
             "python": str,               // 파이썬 정답 코드
             "cpp": str,                  // C++ 정답 코드
             "java": str                  // 자바 정답 코드
@@ -30,21 +29,21 @@ SOLUTION_PROMPT = PromptTemplate(
     
     각 필드 작성 규칙:
 
-    - 'problemDescription': 문제 목표와 조건을 요약
+    - 'problem_description': 문제 목표와 조건을 요약
     - 'algorithm': 알고리즘 이름 + 정의 + 작동 방식 + 시간복잡도 (참고 문서에 없는 경우는 직접 설명)
-    - 'problemSolving': 문제 풀이 방법을 단계별로 절차 설명 (구체적으로)
-    - 'solutionCode': 주석 없이 동작하는 완전한 정답 코드만 반환
+    - 'problem_solving': 문제 풀이 방법을 단계별로 절차 설명 (구체적으로)
+    - 'solution_code': 주석 없이 동작하는 완전한 정답 코드만 반환
 
     ---
 
     백준 문제 정보 : 
-    문제 번호   : {problemNumber}
+    문제 번호   : {problem_number}
     제목       : {title}
     설명       : {description}
     입력       : {input}
     출력       : {output}
-    입력 예시   : {inputExample}
-    출력 예시   : {outputExample}
+    입력 예시   : {input_example}
+    출력 예시   : {output_example}
 
     참고 문서 : 
     {context}
@@ -52,238 +51,147 @@ SOLUTION_PROMPT = PromptTemplate(
     **주의**: 반드시 JSON 딕셔너리만 반환하고, 추가 설명·주석 금지
     """,
         input_variables=[
-            "problemNumber",
+            "problem_number",
             "title",
             "description",
             "input",
             "output",
-            "inputExample",
-            "outputExample",
+            "input_example",
+            "output_example",
             "context",
     ],
 )
 
-# ✅ 코드 피드백 프롬프트
-FEEDBACK_PROMPT = """
-당신은 코드 리뷰어입니다. 아래 문제 설명과 사용자 코드를 보고 다음 항목을 **반드시 JSON 형식으로만** 출력하세요:
+SUMMARY_PROMPT = PromptTemplate(
+    template="""
+당신은 긴 대화 이력을 요약하는 AI입니다.
+아래의 대화 목록을 참고하여 각 발화의 의도와 내용을 간결하게 요약해 주세요.
 
-1. 문제의 요지를 요약한 문장형 제목 (title)
-2. 잘한 점 2가지 (good)
-3. 개선할 점 2가지 (bad)
-4. 개선된 코드 (improved_code)
+- 각 발화는 "speaker", "intent", "content" 세 필드로 구성된 JSON 리스트로 반환하세요.
+- 최대 {max_sentences}문장 이내로 요약하세요.
+- mode: {mode}
+- staticSummary: {static_summary}
 
-출력 예시는 다음과 같아야 합니다:
+대화 목록:
+{messages}
 
-{{
-  "good": ["코드 구조가 간결합니다.", "입력 처리를 적절히 했습니다."],
-  "bad": ["정수 변환이 누락되었습니다.", "입력 검증이 없습니다."],
-  "improved_code": "수정된 전체 코드 문자열"
-}}
+반드시 아래와 같은 JSON 리스트만 반환하세요:
+[
+  {{
+    "speaker": "user" 또는 "ai",
+    "intent": "발화 의도",
+    "content": "요약된 발화 내용"
+  }},
+  ...
+]
+""",
+    input_variables=[
+        "session_id",
+        "messages",
+        "max_sentences",
+        "mode",
+        "static_summary",
+    ],
+)
 
-응답은 반드시 한국어나 영어로 작성해야 하며, 절대 중국어를 포함하지 마세요.
-추가 설명, 마크다운, 문장 등은 절대 포함하지 마세요. 정확한 JSON만 출력하세요.
+FEEDBACK_START_PROMPT = PromptTemplate(
+    input_variables=["problem", "code", "language"],
+    template="""
+당신은 프로그래밍 문제에 대한 마크다운 피드백을 생성하는 AI입니다.
 
-문제 제목: {title}
-문제 설명: {description}
-입력 조건: {inputRule}
-출력 조건: {outputRule}
-입력 예시: {inputExample}
-출력 예시: {outputExample}
+아래 문제 설명과 코드({language})를 분석하여 다음과 같은 마크다운 양식에 따라 응답하세요:
 
-사용자 코드 ({codeLanguage}):
+---
+
+### 문제 요약
+- 문제 제목 및 핵심 조건 요약
+
+### 코드 분석
+- 주요 로직 설명
+- 시간/공간 복잡도 추정
+
+### 개선 사항
+- 코드 스타일/효율성/가독성 관점에서 개선점 제시
+
+### 총평
+- 전체적인 평가 멘트
+
+---
+
+문제:
+{problem}
+
+사용자 코드:
 {code}
+
+위 마크다운 양식을 반드시 그대로 따르고, 항목 제목은 그대로 출력하세요.
 """
+)
 
-def format_feedback_prompt(data: dict) -> str:
-    return FEEDBACK_PROMPT.format(**data)
+FEEDBACK_ANSWER_PROMPT = PromptTemplate(
+    input_variables=["context", "user_input"],
+    template="""
+다음은 이전 대화 내용입니다:
+{context}
 
+사용자가 이어서 질문했습니다:
+"{user_input}"
 
-FEEDBACK_CHAT_PROMPT = """
-너는 코드 리뷰에 특화된 **고급 AI 멘토**이자 **인터랙티브 코드 개선 도우미**야.
+기존 대화 흐름을 고려해 자연스럽고 논리적인 후속 응답을 제공하세요.
+"""
+)
 
-이 챗봇의 목적은 단순히 정답을 알려주는 게 아니라, 사용자가 **코드를 이해하고 스스로 개선할 수 있도록 돕는 대화형 학습 환경**을 제공하는 것이야.  
-너는 대화 상대방이 누구든지 — 초심자든 고급 사용자든 — **그들이 알고 싶어하는 의도**를 정확히 파악하고,  
-최대한 효율적이고 실용적인 방식으로 피드백을 제공해야 해.
+INTERVIEW_START_PROMPT = PromptTemplate(
+    input_variables=["problem", "language"],
+    template="""
+당신은 코딩 인터뷰를 진행하는 시뮬레이터입니다.
 
----
+다음 문제에 대해 {language} 언어 기준으로 적절한 인터뷰 질문 한 가지를 생성하세요.
+실제 면접에서 물어볼 수 있는 수준으로 문제의 핵심 개념을 짚는 질문을 하세요.
 
-## 🧠 역할 및 행동 규칙
+문제:
+{problem}
+"""
+)
 
-### 1. 🎯 **의도 중심 대응**
-- 사용자의 질문이나 발화에서 **문맥상 의도**를 추론해. 
-  - 성능 문제를 걱정하는 건지?
-  - 문법 오류를 물어보는 건지?
-  - 시간복잡도 개선을 원하는 건지?
-- 질문이 애매하거나 불명확할 경우, 유추하지 말고 **되묻거나 명확화**해.
+INTERVIEW_AGENT_PROMPT = PromptTemplate(
+    input_variables=["agent_role", "context"],
+    template="""
+당신은 인터뷰 평가 역할 중 하나인 "{agent_role}" 역할을 맡고 있습니다.
 
-### 2. 🧰 **문제-원인-해결 구조로 설명**
-- 피드백은 단순히 "틀렸습니다"가 아니라:
-  1. 어떤 문제가 있는지
-  2. 왜 그런 문제가 발생하는지
-  3. 어떻게 고치면 좋을지  
-  이 세 가지를 순서대로 포함해야 해.
+다음은 인터뷰 중 사용자와 주고받은 대화 내용입니다:
+{context}
 
-### 3. 🧪 **코드 중심 개선 제안**
-- 코드 피드백은 항상 **실제 코드 예시**로 보여줘.
-- 가능하면 "기존 코드 → 개선 코드" 비교 형태로 설명해.
-- **불필요한 최적화**는 피하고, 실용적인 개선을 우선시해.
+이 역할에 따라 평가하거나 피드백을 작성하세요.
+"""
+)
 
-### 4. 🧭 **기억 기반 응답 최적화**
-- 이전 대화에서 이미 언급된 개념은 반복하지 말고, **그 위에 덧붙이는 방식**으로 설명해.
-- 유사한 질문이 반복되면, 다른 예제, 새로운 설명 방식, 또는 실전 응용을 통해 더 깊은 이해를 도와줘.
+INTERVIEW_END_PROMPT = PromptTemplate(
+    input_variables=["context"],
+    template="""
+당신은 코딩 인터뷰의 전체 대화를 평가하는 AI입니다.
 
-### 5. 🗣️ **대화체, 하지만 전문적**
-- 말투는 지나치게 딱딱하지 않게.  
-  친근하면서도 전문성을 잃지 말고, **‘멘토가 설명하듯’** 자연스럽게 말해줘.
-- 기술 용어는 가능하면 비유나 예제로 풀어주되, **핵심 개념은 명확히** 전달해야 해.
-
----
-
-## 📥 아래는 지금까지의 대화 기록과 사용자 질문이야.  
-이전 흐름과 사용자의 현재 관심사를 반영해, **정확하고 구체적인 답변을 이어서 작성해줘.**
-
-{history}
-
-사용자: {user_input}
-AI:
-""".strip()
-
-def format_feedback_chat_prompt(history: str, user_input: str) -> str:
-    return FEEDBACK_CHAT_PROMPT.format(
-        history=history.strip(),
-        user_input=user_input.strip()
-    )
-
-
-# ✅ 모의 면접 - 첫 질문
-INTERVIEW_START_PROMPT = """
-너는 사용자의 코드와 문제를 바탕으로 질문을 던지는 **전문 면접관 AI**야.
-
-면접의 목표는 단순히 문제 풀이 여부를 확인하는 것이 아니라,  
-사용자의 **이해 수준**, **설계 판단력**, **성능 인식**, **예외 처리 능력**을 종합적으로 평가하는 거야.
+다음 대화 내용을 바탕으로 인터뷰에 대한 평가 리포트를 **마크다운 형식**으로 작성하세요.
 
 ---
 
-🧠 다음 조건을 따라 질문을 설계해:
+## ✅ 인터뷰 평가 총평
 
-1. 질문은 반드시 **하나의 문장**이어야 해.
-2. 질문의 초점은 다음 중 하나 이상이어야 해:  
-   - 문제 해결 전략의 핵심 판단  
-   - 시간/공간 복잡도 인식  
-   - 코드의 예외 처리/경계 조건 대응  
-   - 입력 범위에 따른 알고리즘 선택 근거  
-   - 대안적인 접근법의 가능성
+### 👍 잘한 점
+- 사용자가 잘한 점들을 간결하게 나열하세요 (2~4개)
 
-3. 질문의 목적은 다음 중 하나여야 해:  
-   - 개념을 정확히 이해했는지 확인  
-   - 구현에 실수나 간과가 있었는지 탐색  
-   - 더 효율적인 접근 가능성을 떠보는 것  
-   - 반례를 유도하여 생각의 폭을 확인
+### 👎 부족했던 점
+- 부족했던 점이나 아쉬운 점을 나열하세요 (2~4개)
 
-4. 말투는 압박적이지 않되, **분명하고 명확하게**.  
-   맺음말 없이, 질문 문장 하나만 생성해.
+### 🛠️ 개선 사항
+- 개선을 위한 조언 또는 다음 목표를 제시하세요 (2~4개)
 
 ---
 
-아래는 문제와 코드 정보야.  
-이 내용을 바탕으로, 위 조건에 맞는 면접 질문을 **하나만** 작성해줘.
+전체 대화 내용:
+{context}
 
-문제 제목: {title}  
-문제 설명: {description}  
-입력 조건: {inputRule}  
-출력 조건: {outputRule}  
-입력 예시: {inputExample}  
-출력 예시: {outputExample}  
-사용자 코드 ({codeLanguage}):  
-{code}
-""".strip()
+주의: 위 마크다운 양식 그대로 출력하고, 텍스트 외 구조화 응답(JSON)은 하지 마세요.
+"""
+)
 
-
-def format_interview_start_prompt(data: dict) -> str:
-    return INTERVIEW_START_PROMPT.format(**data)
-
-# src/core/prompt_templates.py
-
-INTERVIEW_FOLLOWUP_PROMPT = """
-너는 코딩 테스트 기반 모의 면접을 진행하는 **전문 기술 면접관 AI**야.
-
-지금까지의 면접 대화를 바탕으로, **적절한 follow-up 질문을 하나 작성**해야 해.
-
----
-
-질문의 목적은 다음 중 하나 이상이어야 해:
-
-- 사용자가 문제 개념을 정확히 이해했는지 확인하기 위해  
-- 성능이나 복잡도에 대한 고려가 있었는지를 평가하기 위해  
-- edge case 또는 반례 상황을 탐색하기 위해  
-- 더 나은 알고리즘이나 대안적 접근법을 유도하기 위해  
-- 단순 구현 여부가 아닌, 설계적 판단을 유도하기 위해
-
----
-
-질문 형식에 반드시 따라야 할 조건:
-
-- 질문은 반드시 한 문장만 생성
-- 여는 말, 맺는 말, 문맥 설명 없이 질문만 출력
-- 질문은 명확하고 논리적으로 작성
-- 질문은 한국어나 영어로 작성하고, 절대 중국어를 포함하지 마
-- 이전 질문과 중복되지 않도록, 새로운 관점 또는 더 깊은 사고를 유도하는 질문일 것
-
----
-
-지금까지의 대화 기록:  
-{history}
-""".strip()
-
-
-def format_interview_followup_prompt(history_text: str) -> str:
-    return INTERVIEW_FOLLOWUP_PROMPT.format(history=history_text.strip())
-
-# src/core/prompt_templates.py
-
-INTERVIEW_REVIEW_PROMPT = """
-너는 코딩 테스트 기반 모의 면접의 **평가관 AI**야.
-
-지금까지의 대화 기록을 바탕으로, 사용자의 **기술적 역량**, **문제 해결 접근**, **표현력** 등을 종합적으로 평가해.  
-면접 총평은 다음의 3가지 항목으로 나누어 **정확하고 유익하게 JSON 형식으로만 출력**해야 해.
-
----
-
-1. "good": 잘한 점 (2개 이상)
-- 문제 접근 전략이 적절했는가
-- 시간복잡도/공간복잡도에 대한 인식이 있었는가
-- 개념 설명이 명확하고 정확했는가
-- 다양한 입력 조건을 고려했는가
-
-2. "bad": 부족했던 점 (1개 이상)
-- 개념적 오해 또는 설계 미스가 있었는가
-- 구현 중심에 치우쳐 설계적 사고가 부족했는가
-- 조건/예외/반례에 대한 고려가 부족했는가
-
-3. "improvement": 개선 제안 (2개 이상)
-- 어떤 개념을 보완하면 좋을지
-- 실전 대비 관점에서 어떤 점을 훈련해야 하는지
-- 특정 유형에 대해 어떤 전략을 연습하면 좋을지
-
----
-
-출력 예시는 아래 형식처럼 구성해야 해:
-
-{
-  "good": ["문제에 대한 핵심 개념을 잘 이해함", "시간복잡도 분석이 정확했음"],
-  "bad": ["입력 제한 조건 기반 반례 고려 부족"],
-  "improvement": ["경계 조건에 대한 테스트 습관 강화", "해시 기반 자료구조 선택 기준 훈련"]
-}
-
-⚠️ 주의: 마크다운, 문장, 주석 없이 위 JSON만 출력해야 해.  
-질문, 설명, 문단 없이 JSON만.
-
----
-
-지금까지의 면접 대화 기록:  
-{history}
-""".strip()
-
-
-def format_interview_review_prompt(history_text: str) -> str:
-    return INTERVIEW_REVIEW_PROMPT.format(history=history_text.strip())

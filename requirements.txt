@@ -1,27 +1,24 @@
+# python==3.12.7
 fastapi==0.115.12
 uvicorn==0.34.2
-httpx==0.28.1
 pydantic==2.11.3
 pydantic-settings==2.6.1
 python-dotenv==1.1.0
-pandas==2.2.3
-streamlit==1.45.1
-tiktoken==0.9.0
 
+openai==1.90.0
 langchain==0.3.24
-langchain-openai==0.3.7
 langchain-community==0.3.23
-langchain-huggingface==0.2.0
+langchain-huggingface==0.3.0
 langchain-google-genai==2.1.4
-# langchain-ollama==0.3.0
-
-sentence-transformers==3.4.1
-faiss-cpu==1.10.0
-#vllm==0.8.3
 
 google-cloud-storage>=3.1.0
 google-ai-generativelanguage==0.6.18
 grpcio==1.71.0
 grpcio-status==1.71.0
-filetype==1.2.0
 protobuf==5.29.4
+
+sentence-transformers==3.4.1
+faiss-cpu==1.10.0
+selenium==4.31.0
+beautifulsoup4==4.12.3
+filetype==1.2.0

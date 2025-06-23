@@ -1,10 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.services.solution_service import explain_solution
 
 router = APIRouter()
 
-# POST /api/ai/v1/solution
-@router.post("/solution", response_model=SolutionResponse)
+# 백준 문제 해설 생성 엔드포인트
+@router.post(
+    "/solution",
+    response_model=SolutionResponse
+)
 async def solution_endpoint(body: SolutionRequest):
     return await explain_solution(body)

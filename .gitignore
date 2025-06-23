@@ -13,7 +13,11 @@ venv/
 .vscode/
 
 # 기타
-DB/*.csv
 .DS_Store
+.pytest_cache/
 logs/
-mock/
+test_inference.py
+
+# 비밀 키
+secret/
+*.json

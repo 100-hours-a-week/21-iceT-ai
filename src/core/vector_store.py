@@ -1,72 +1,57 @@
-# src/core/vector_store.py
-import os, logging
+import os, platform, logging
 from google.cloud import storage
 from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
+from src.core.embedding_model import get_embedder
 from dotenv import load_dotenv
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# 프로젝트 루트 경로 계산
-CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, "..", ".."))
-
-# .env에서 상대경로를 가져오고, 절대경로로 변환
-index_path_raw  = os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index")
-if os.path.isabs(index_path_raw):
-    LOCAL_INDEX_DIR = index_path_raw
-else:
-    LOCAL_INDEX_DIR = os.path.normpath(os.path.join(BASE_DIR, index_path_raw))
-
-def get_embedder():
-    return HuggingFaceEmbeddings(
-        model_name="intfloat/multilingual-e5-base",
-        encode_kwargs={"normalize_embeddings": True}
-    )
-
-USE_GCS = os.getenv("USE_GCS_FOR_FAISS", "false").lower() == "true"
+# Google Cloud Storage 설정
 GCS_BUCKET = os.getenv("GCS_BUCKET")
 GCS_PREFIX = os.getenv("GCS_PREFIX")
+LOCAL_INDEX_DIR = os.getenv("LOCAL_INDEX_DIR")
 
+# GCS에서 FAISS 인덱스 파일들 다운로드
 def download_faiss_from_gcs():
+    # 필요할 때만 GCS에서 인덱스 다운로드
     if os.path.exists(os.path.join(LOCAL_INDEX_DIR, "index.faiss")):
-        logger.info("✅ FAISS 인덱스 로컬 캐시 사용")
+        logger.info("FAISS 인덱스 로컬 캐시 사용")
         return
 
-    logger.info("☁️ GCS에서 FAISS 인덱스 다운로드 시작")
+    logger.info("GCS에서 FAISS 인덱스 다운로드 시작")
     client = storage.Client()
     bucket = client.bucket(GCS_BUCKET)
     blobs = bucket.list_blobs(prefix=GCS_PREFIX)
 
     os.makedirs(LOCAL_INDEX_DIR, exist_ok=True)
     for blob in blobs:
-        if blob.name.endswith("/"):
+        if blob.name.endswith("/"):  # 디렉토리 무시
             continue
         filepath = os.path.join(LOCAL_INDEX_DIR, os.path.basename(blob.name))
         blob.download_to_filename(filepath)
 
-    logger.info("✅ GCS에서 FAISS 인덱스 다운로드 완료")
+    logger.info("GCS에서 FAISS 인덱스 다운로드 완료")
 
+# FAISS 벡터스토어 로딩 (GCS에서 받아온 인덱스 기반)
 def load_vectorstore():
-    try:
-        if not LOCAL_INDEX_DIR:
-            raise ValueError("LOCAL_INDEX_DIR 환경변수가 설정되지 않았습니다.")
+    embeddings = get_embedder()
 
-        if USE_GCS:
-            download_faiss_from_gcs()
-        elif not os.path.exists(os.path.join(LOCAL_INDEX_DIR, "index.faiss")):
-            raise FileNotFoundError("로컬 FAISS 인덱스가 존재하지 않습니다.")
-
-        embedder = get_embedder()
+    # ✅ 운영체제에 따라 분기
+    if platform.system() == "Windows":
+        print("🔍 [RAG] Windows 환경 → 로컬 FAISS 인덱스 로딩")
         return FAISS.load_local(
-            LOCAL_INDEX_DIR,
-            embeddings=embedder,
+            "vector/faiss_index",
+            embeddings,
             allow_dangerous_deserialization=True
         )
-    
 
-    except Exception as e:
-        logger.error(f"❌ 벡터스토어 로딩 오류: {e}")
-        raise e
+    else:
+        print("☁️ [RAG] Linux 환경 → GCP에서 FAISS 인덱스 다운로드")
+        download_faiss_from_gcs()
+        return FAISS.load_local(
+            os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index"),
+            embeddings,
+            allow_dangerous_deserialization=True
+        )

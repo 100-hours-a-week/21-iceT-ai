@@ -1,60 +1,67 @@
-import os
-import time
-import random
-import platform
-from bs4 import BeautifulSoup
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from src.config import settings
+from bs4 import BeautifulSoup
+import time
+import random
+import os
+from dotenv import load_dotenv
+import platform
 
-GROUP_URL = "https://www.acmicpc.net/group/workbook/23567"
+load_dotenv()
 
-# ✅ 셀레니움 드라이버 생성
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Mobile/15E148 Safari/604.1"
+]
+
+# Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
-    
-    system = platform.system().lower()
-    if "windows" in system:
-        chromedriver_path = "C:/Workspace/21-iceT-ai/src/crawler/chromedriver.exe"
-        service = Service(chromedriver_path)
-
+    system = platform.system()
+    if system == "Windows":
+        # Windows
+        chrome_path = None
+        driver_path = "C:/Users/dodam/chromedriver.exe"
+        user_agent = USER_AGENTS[0]
+    elif system == "Darwin":
+        # MacOS
+        chrome_path = None
+        driver_path = "/Users/junsu/Downloads/chromedriver-mac-arm64/chromedriver"
+        user_agent = USER_AGENTS[1]
     else:
-        options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
-        chromedriver_path = "/home/ubuntu/chrome/chromedriver-linux64/chromedriver"
-        service = Service(chromedriver_path)
+        # Linux/Ubuntu
+        chrome_path = "/home/ubuntu/chrome/chrome-linux64/chrome"
+        driver_path = "/home/ubuntu/chrome/chromedriver-linux64/chromedriver"
+        user_agent = USER_AGENTS[2]
 
+    if chrome_path:
+        options.binary_location = chrome_path
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/123.0.6312.105 Safari/537.36"
-    )
+    options.add_argument(f"user-agent={user_agent}")
 
+    service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
-
-    # 봇 탐지 우회
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": "Object.defineProperty(navigator, 'webdriver', { get: () => undefined })"
+       "source": """
+           Object.defineProperty(navigator, 'webdriver', {
+               get: () => undefined
+           })
+       """
     })
-
     return driver
 
-
-# ✅ 로그인 쿠키 추가
+# 로그인 쿠키 추가 함수
 def login_with_cookies(driver):
     driver.get("https://www.acmicpc.net/")
     driver.add_cookie({
         'name': 'OnlineJudge',
-        'value': settings.boj_cookie_onlinejudge,
+        'value': os.getenv("BOJ_COOKIE_ONLINEJUDGE"),
         'domain': '.acmicpc.net',
         'path': '/',
         'httpOnly': True,
@@ -62,7 +69,7 @@ def login_with_cookies(driver):
     })
     driver.add_cookie({
         'name': 'bojautologin',
-        'value': settings.boj_cookie_autologin,
+        'value': os.getenv("BOJ_COOKIE_AUTOLOGIN"),
         'domain': '.acmicpc.net',
         'path': '/',
         'httpOnly': True,
@@ -71,46 +78,13 @@ def login_with_cookies(driver):
     driver.get("https://www.acmicpc.net/")
 
 
-def get_today_workbook_id(driver) -> int:
-    from selenium.webdriver.common.by import By
-
-    GROUP_URL = "https://www.acmicpc.net/group/workbook/23567"
-    driver.get(GROUP_URL)
-    print("현재 페이지:", driver.title)
-    print("HTML 일부:", driver.page_source[:1000])
-    try:
-        # 테이블 로딩까지 최대 10초 기다림
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr"))
-        )
-
-        row = driver.find_element(By.CSS_SELECTOR, "table tbody tr")
-        link = row.find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
-        href = link.get_attribute("href")
-        return int(href.split("/")[-1])
-
-    except Exception as e:
-        # 🔍 문제 파악을 위해 HTML 저장
-        with open("debug_group_page.html", "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        raise RuntimeError("오늘의 워크북을 찾을 수 없습니다.") from e
-
-# ✅ 워크북에서 문제 ID 리스트 추출
-def get_problem_ids_from_workbook(driver, group_id: int, workbook_id: int) -> list[int]:
-    url = f"https://www.acmicpc.net/group/workbook/view/{group_id}/{workbook_id}"
-    driver.get(url)
-    rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
-    return [int(r.find_element(By.CSS_SELECTOR, "td:nth-child(1)").text) for r in rows]
-
-
-# ✅ 개별 문제 크롤링
-def crawl_boj_problem_with_selenium(driver, problem_id: int) -> dict:
+# 백준 문제를 크롤링하는 함수
+def crawl_boj_problem_with_selenium(driver, problem_id):
     url = f"https://www.acmicpc.net/problem/{problem_id}"
-    print(f"🔍 문제 {problem_id} 크롤링 시작: {url}")
     try:
         driver.get(url)
         time.sleep(random.uniform(1.5, 3.0))
-
+        
         soup = BeautifulSoup(driver.page_source, 'html.parser')
 
         def safe_select(selector):
@@ -131,7 +105,7 @@ def crawl_boj_problem_with_selenium(driver, problem_id: int) -> dict:
             "input": input_desc,
             "output": output_desc,
             "input_example": ex_inputs,
-            "output_example": ex_outputs,
+            "output_example": ex_outputs
         }
 
     except Exception as e:
@@ -142,6 +116,6 @@ def crawl_boj_problem_with_selenium(driver, problem_id: int) -> dict:
             "description": "",
             "input": "",
             "output": "",
-            "input_example": [],
-            "output_example": [],
+            "input_example": "",
+            "output_example": ""
         }
