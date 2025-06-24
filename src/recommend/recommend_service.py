@@ -45,7 +45,7 @@ def recommend_for_user() -> list[list[int]]:
                 cand_ids |= _problems_by_tier_tag.get((tgt, tag), set())
 
             docs = [Document(page_content=_id2text[i], metadata=_id2meta[i]) for i in cand_ids]
-            idx = FAISS.from_documents(
+            retriever = FAISS.from_documents(
                 documents=docs,
                 embedding=embedder,
                 index_name=f"tmp_{pid}_{direction}",
@@ -53,7 +53,7 @@ def recommend_for_user() -> list[list[int]]:
             ).as_retriever()
 
             query = _id2text[pid]
-            top_doc = idx.invoke(query, top_k=1)[0]
+            top_doc = retriever.invoke(query, top_k=1)[0]
             candidates[direction] = top_doc.metadata["id"]
 
         hi_lo[pid] = candidates

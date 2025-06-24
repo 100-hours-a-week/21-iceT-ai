@@ -1,25 +1,28 @@
 # 백준 문제 데이터 로더
 
-import requests, logging
-from src.config import BAEKJUN_BACKEND_URL, BACKEND_TIMEOUT
+import csv, logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# 백엔드에서 모든 문제 목록 조회
+CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "boj.csv"
+
+# CSV에서 모든 문제 데이터 조회
 def fetch_all_problems():
-    try:
-        resp = requests.get(BAEKJUN_BACKEND_URL, timeout=BACKEND_TIMEOUT)
-        resp.raise_for_status()
-        problems = resp.json()
-    except requests.RequestException as e:
-        logger.error(f"GET 요청 실패: {e}")
+    if not CSV_PATH.is_file():
+        logger.error(f"CSV 파일이 없습니다: {CSV_PATH}")
         return
-    
-    for p in problems:
-        yield {
-            "id":          p["id"],
-            "title":       p["title"],
-            "description": p["description"],
-            "tier":        p["tier"],
-            "tags":        p["tags"]
-        }
+
+    with CSV_PATH.open(encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                yield {
+                    "id":          int(row["id"]),
+                    "title":       row["title"],
+                    "description": row["description"],
+                    "tier":        int(float(row["tier"])),  # 1.0 → 1
+                    "tags":        [t.strip() for t in row["tags"].split(",") if t.strip()]
+                }
+            except (KeyError, ValueError) as e:
+                logger.warning(f"잘못된 행 건너뜀: {e} ▶ {row}")

@@ -3,7 +3,7 @@
 # 추천 문제 생성을 위한 메인 함수
 import logging
 from src.core.logger import setup_logging
-from src.recommend.recommend_service import recommend_for_user, send_recommendations
+from src.recommend.recommend_service_v2 import recommend_for_user, send_recommendations
 
 setup_logging()
 logger = logging.getLogger(__name__)
