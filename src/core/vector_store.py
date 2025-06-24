@@ -40,7 +40,7 @@ def load_vectorstore():
 
     # ✅ 운영체제에 따라 분기
     if platform.system() == "Windows":
-        print("🔍 [RAG] Windows 환경 → 로컬 FAISS 인덱스 로딩")
+        print("[RAG] Windows 환경 → 로컬 FAISS 인덱스 로딩")
         return FAISS.load_local(
             "vector/faiss_index",
             embeddings,
@@ -48,7 +48,7 @@ def load_vectorstore():
         )
 
     else:
-        print("☁️ [RAG] Linux 환경 → GCP에서 FAISS 인덱스 다운로드")
+        print("[RAG] Linux 환경 → GCP에서 FAISS 인덱스 다운로드")
         download_faiss_from_gcs()
         return FAISS.load_local(
             os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index"),

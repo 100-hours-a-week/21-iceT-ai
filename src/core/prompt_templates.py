@@ -65,24 +65,21 @@ SOLUTION_PROMPT = PromptTemplate(
 FEEDBACK_START_PROMPT = PromptTemplate(
     input_variables=["problem", "code", "language"],
     template="""
-당신은 프로그래밍 문제에 대한 마크다운 피드백을 생성하는 AI입니다.
+당신은 프로그래밍 문제에 대한 피드백을 생성하는 AI입니다.
 
-아래 문제 설명과 코드({language})를 분석하여 다음과 같은 마크다운 양식에 따라 응답하세요:
+다음은 사용자의 코드({language})와 문제 설명입니다. 아래 마크다운 양식에 따라 피드백을 작성하세요:
 
 ---
 
-### 문제 요약
-- 문제 제목 및 핵심 조건 요약
+## 👍 잘한 점
+- 코드에서 좋았던 점을 기술하세요.
 
-### 코드 분석
-- 주요 로직 설명
-- 시간/공간 복잡도 추정
+## 👎 개선할 점
+- 비효율적이거나 개선 가능한 부분을 설명하세요.
 
-### 개선 사항
-- 코드 스타일/효율성/가독성 관점에서 개선점 제시
-
-### 총평
-- 전체적인 평가 멘트
+## 🛠️ 개선된 코드
+- 위 문제점을 반영하여 수정한 {language} 코드를 제시하세요.
+- 주석 없이 동작하는 완전한 코드로 작성하세요.
 
 ---
 
@@ -92,9 +89,12 @@ FEEDBACK_START_PROMPT = PromptTemplate(
 사용자 코드:
 {code}
 
-위 마크다운 양식을 반드시 그대로 따르고, 항목 제목은 그대로 출력하세요.
+주의:
+- 반드시 위의 세 가지 항목으로만 구성하세요.
+- 항목 제목은 그대로 출력하고, 간결하고 논리적으로 작성하세요.
 """
 )
+
 
 FEEDBACK_ANSWER_PROMPT = PromptTemplate(
     input_variables=["context", "user_input"],
@@ -122,44 +122,91 @@ INTERVIEW_START_PROMPT = PromptTemplate(
 """
 )
 
-INTERVIEW_AGENT_PROMPT = PromptTemplate(
-    input_variables=["agent_role", "context"],
+# 1. 질문 생성 에이전트
+QUESTION_AGENT_PROMPT = PromptTemplate(
+    input_variables=["context", "avoid_list"],
     template="""
-당신은 인터뷰 평가 역할 중 하나인 "{agent_role}" 역할을 맡고 있습니다.
+당신은 코딩 인터뷰를 진행하는 AI 면접관입니다.
 
-다음은 인터뷰 중 사용자와 주고받은 대화 내용입니다:
+다음 대화 문맥을 참고하여 사용자에게 할 수 있는 **적절한 다음 질문 1개**를 생성하세요.
+
+조건:
+- 질문은 이전 질문과 중복되지 않아야 합니다.
+- 가능한 한 심층적이고 논리적인 질문이어야 합니다.
+
+[대화 문맥]
 {context}
 
-이 역할에 따라 평가하거나 피드백을 작성하세요.
+[이전 질문 목록]
+{avoid_list}
+
+주의: 반드시 질문 한 문장만 출력하세요.
 """
 )
 
-INTERVIEW_END_PROMPT = PromptTemplate(
+# 2. 꼬리 질문 에이전트
+FOLLOWUP_AGENT_PROMPT = PromptTemplate(
+    input_variables=["previous_question", "user_response"],
+    template="""
+당신은 AI 면접관입니다.
+
+다음은 사용자의 이전 질문과 응답입니다:
+
+질문: {previous_question}
+응답: {user_response}
+
+이 응답에 대해 더 깊이 사고를 유도할 수 있는 **꼬리 질문 1개**를 생성하세요.
+
+조건:
+- 응답의 핵심을 짚고 더 구체적으로 탐색해야 합니다.
+- 반드시 질문 하나만 출력하세요.
+"""
+)
+
+# 3. 종료 판단 에이전트
+FINISH_DECISION_PROMPT = PromptTemplate(
     input_variables=["context"],
     template="""
-당신은 코딩 인터뷰의 전체 대화를 평가하는 AI입니다.
+당신은 인터뷰 종료 여부를 판단하는 AI입니다.
 
-다음 대화 내용을 바탕으로 인터뷰에 대한 평가 리포트를 **마크다운 형식**으로 작성하세요.
+다음은 지금까지의 인터뷰 대화입니다:
 
----
-
-## ✅ 인터뷰 평가 총평
-
-### 👍 잘한 점
-- 사용자가 잘한 점들을 간결하게 나열하세요 (2~4개)
-
-### 👎 부족했던 점
-- 부족했던 점이나 아쉬운 점을 나열하세요 (2~4개)
-
-### 🛠️ 개선 사항
-- 개선을 위한 조언 또는 다음 목표를 제시하세요 (2~4개)
-
----
-
-전체 대화 내용:
 {context}
 
-주의: 위 마크다운 양식 그대로 출력하고, 텍스트 외 구조화 응답(JSON)은 하지 마세요.
+판단 기준:
+- 더 이상 의미 있는 질문이 없고, 충분히 평가할 수 있다고 판단되면 True
+- 그렇지 않으면 False
+
+주의: 반드시 'True' 또는 'False' 둘 중 하나만 출력하세요. 다른 말은 하지 마세요.
 """
 )
 
+# 4. 평가 에이전트
+EVALUATION_AGENT_PROMPT = PromptTemplate(
+    input_variables=["context"],
+    template="""
+당신은 전체 코딩 인터뷰를 평가하는 AI입니다.
+
+다음 대화 문맥을 참고하여 아래 마크다운 형식에 따라 총평을 작성하세요:
+
+---
+
+## ✅ 인터뷰 평가 종합
+
+### 👍 잘한 점
+...
+
+### 👎 부족했던 점
+...
+
+### 🛠️ 개선 사항
+...
+
+---
+
+[면접 정보 및 대화 문맥]
+{context}
+
+주의: 반드시 위 마크다운 양식을 그대로 지켜 출력하세요.
+"""
+)

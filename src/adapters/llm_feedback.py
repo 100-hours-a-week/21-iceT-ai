@@ -3,12 +3,15 @@ import logging
 from openai import OpenAI
 from dotenv import load_dotenv
 from src.config import settings  # ✅ 설정 import
+from src.core.llm_key_manager import APIKeyManager
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS"))
+
 client = OpenAI(
-    api_key=os.getenv("SOLAR_API_KEY"),
+    api_key=solar_key_manager.next_key(),
     base_url="https://api.upstage.ai/v1"
 )
 

@@ -3,24 +3,17 @@ import logging
 from openai import OpenAI
 from dotenv import load_dotenv
 from src.config import settings
+from src.core.llm_key_manager import APIKeyManager
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS"))
+
 client = OpenAI(
-    api_key=os.getenv("SOLAR_API_KEY"),
+    api_key=solar_key_manager.next_key(),
     base_url="https://api.upstage.ai/v1"
 )
-
-AGENTS = [
-    "전략 분석 에이전트",
-    "복잡도 평가 에이전트",
-    "테스트 케이스 에이전트",
-    "코드품질 에이전트",
-    "인터뷰 시뮬레이터",
-    "대안 탐색 에이전트",
-    "에러 핸들링 에이전트"
-]
 
 async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback

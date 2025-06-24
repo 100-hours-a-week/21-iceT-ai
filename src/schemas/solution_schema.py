@@ -1,13 +1,13 @@
 from pydantic import BaseModel, Field
 
 class SolutionRequest(BaseModel):
-    problemNumber: int = Field(description="문제 번호")
-    title: str = Field(description="문제 제목")
-    description: str = Field(description="문제 설명")
-    input: str = Field(description="입력 설명")
-    output: str = Field(description="출력 설명")
-    inputExample: str = Field(description="입력 예시")
-    outputExample: str = Field(description="출력 예시")
+    problemNumber: int = Field(..., alias="problem_number", description="문제 번호")
+    title: str = Field(..., description="문제 제목")
+    description: str = Field(..., description="문제 설명")
+    input: str = Field(..., description="입력 설명")
+    output: str = Field(..., description="출력 설명")
+    inputExample: str = Field(..., alias="input_example", description="입력 예시")
+    outputExample: str = Field(..., alias="output_example", description="출력 예시")
 
 class ProblemCheck(BaseModel):
     problemDescription: str = Field(description="요약된 문제 개요", alias="problem_description")

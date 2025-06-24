@@ -21,8 +21,3 @@ class InterviewfollowRequest(BaseModel):
     sessionId: str
     messages: List[Message]
     summary: str  # JSON string. 문제+대화 요약 모두 포함 ("type": "problem" / "chat")
-
-class InterviewEndRequest(BaseModel):
-    sessionId: str
-    messages: List[Message]
-    summary: str  # 위와 동일하게 통합

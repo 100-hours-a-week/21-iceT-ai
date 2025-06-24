@@ -1,16 +1,22 @@
 import json
+import asyncio
+from json import dumps
 from typing import AsyncGenerator
 from src.config import settings
-from src.adapters.llm_interview import call_agent, AGENTS
+from src.adapters.llm_interview import call_agent
 from src.schemas.interview_schema import (
     InterviewStartRequest,
-    InterviewfollowRequest,
-    InterviewEndRequest
+    InterviewfollowRequest
 )
 from src.core.prompt_templates import (
-    INTERVIEW_START_PROMPT,
-    INTERVIEW_AGENT_PROMPT,
-    INTERVIEW_END_PROMPT,
+    INTERVIEW_START_PROMPT
+)
+
+from src.core.prompt_templates import (
+    QUESTION_AGENT_PROMPT,
+    FOLLOWUP_AGENT_PROMPT,
+    FINISH_DECISION_PROMPT,
+    EVALUATION_AGENT_PROMPT
 )
 from src.core.utils.history_utils import build_context
 
@@ -43,96 +49,77 @@ async def handle_interview_start(req: InterviewStartRequest):
     )
 
 # ✅ /interview/answer
-async def handle_interview_answer(req: InterviewfollowRequest):
+async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
-
-    # 요약에서 problem/chat 분리
     problem_summary, chat_summary = extract_problem_and_chat(req.summary or "")
-
-    # context 생성
     context = build_context(messages, chat_summary)
 
-    # 문제 요약 + 대화 흐름 합치기
+    # 🧱 context 문자열 생성
     problem_text = "\n".join(f"[문제 요약] {c}" for c in problem_summary)
     dialogue_text = "\n".join(f"{m['role']}: {m['content']}" for m in context)
     full_context = f"{problem_text}\n{dialogue_text}" if problem_text else dialogue_text
 
-    # 프롬프트 생성
-    prompt = INTERVIEW_AGENT_PROMPT.format(
-        agent_role="인터뷰 시뮬레이터",
-        context=full_context
-    )
+    # 📌 직전 assistant 질문과 user 응답
+    previous_question = None
+    user_response = None
+    if len(messages) >= 2 and messages[-2]["role"] == "assistant" and messages[-1]["role"] == "user":
+        previous_question = messages[-2]["content"]
+        user_response = messages[-1]["content"]
 
-    previous_questions = [
-        m["content"] for m in messages if m["role"] == "assistant"
-    ]
-    if previous_questions:
-        avoid_list = "\n".join(f"- {q}" for q in previous_questions)
-        prompt += f"\n\n이전 질문과 겹치지 않도록 아래 질문을 피하세요:\n{avoid_list}"
-
-    return await call_agent(
-        prompt,
-        stream=True,
-        max_tokens=settings.max_tokens_interview_start
-    )
-
-
-# ✅ /interview/end
-async def handle_interview_end(req: InterviewEndRequest) -> AsyncGenerator[str, None]:
-    # 문제/대화 요약 추출
-    problem_summary, chat_summary = extract_problem_and_chat(req.summary or "")
-
-    context_list = build_context(
-        [{"role": m.role, "content": m.content} for m in req.messages],
-        chat_summary
-    )
-    problem_text = "\n".join(f"[문제 요약] {c}" for c in problem_summary)
-    dialogue_text = "\n".join(f"{m['role']}: {m['content']}" for m in context_list)
-    full_context = f"{problem_text}\n{dialogue_text}" if problem_text else dialogue_text
-
-    # 개별 에이전트 평가 수집
-    agent_results = []
-    for agent in AGENTS:
-        prompt = INTERVIEW_AGENT_PROMPT.format(
-            agent_role=agent,
-            context=full_context
-        )
-        response = await call_agent(
-            prompt,
+    # ⏱️ 병렬 실행 준비
+    tasks = [
+        call_agent(
+            QUESTION_AGENT_PROMPT.format(
+                context=full_context,
+                avoid_list="\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
+            ),
             stream=False,
-            max_tokens=settings.max_tokens_interview_answer
+            max_tokens=settings.max_tokens_interview_start
+        ),
+        call_agent(
+            FOLLOWUP_AGENT_PROMPT.format(
+                previous_question=previous_question or "",
+                user_response=user_response or ""
+            ),
+            stream=False,
+            max_tokens=settings.max_tokens_interview_start
+        ),
+        call_agent(
+            FINISH_DECISION_PROMPT.format(
+                context=full_context
+            ),
+            stream=False,
+            max_tokens=10
         )
-        agent_results.append((agent, response))
+    ]
 
-    combined = "\n\n".join(
-        f"### {agent}\n{result}" for agent, result in agent_results
-    )
+    question, followup, finish_decision = await asyncio.gather(*tasks)
 
-    leader_prompt = f"""
-당신은 모든 인터뷰 평가 에이전트의 결과를 종합하는 리더 에이전트입니다.
+    # 종료 여부 판단 문자열 정제
+    finish_raw = finish_decision.strip().lower()
 
-각 에이전트의 평가 결과를 참고하여 아래 마크다운 양식에 따라 종합 피드백을 작성하세요:
+    # 인터뷰 종료 여부 판단
+    if finish_raw == "true":
+        evaluation = await call_agent(
+            EVALUATION_AGENT_PROMPT.format(
+                context=full_context
+            ),
+            stream=True,
+            max_tokens=settings.max_tokens_interview_end
+        )
 
-{combined}
+        # 평가는 스트리밍 전송
+        async def evaluation_stream():
+            async for chunk in evaluation:
+                if not chunk.startswith("data: "):
+                    continue
+                content = chunk.removeprefix("data: ").strip()
+                yield f"data: {dumps({'is_finished': True, 'content': content})}\n\n"
+        return evaluation_stream()
 
----
+    # 종료가 아닌 경우 → 꼬리질문 우선 → 질문 fallback
+    selected = followup.strip() if followup.strip() else question.strip()
 
-## ✅ 인터뷰 평가 종합
-
-### 👍 잘한 점
-...
-
-### 👎 부족했던 점
-...
-
-### 🛠️ 개선 사항
-...
-"""
-    return await call_agent(
-        leader_prompt,
-        stream=True,
-        max_tokens=settings.max_tokens_interview_end
-    )
-
-
-
+    async def stream_single():
+        yield f"data: {dumps({'is_finished': False, 'content': selected})}\n\n"
+    return stream_single()

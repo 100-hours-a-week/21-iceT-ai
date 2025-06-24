@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from typing import List
 from src.adapters.llm_summary import generate_summary
 from src.schemas.summary_schema import SummaryRequest, SummaryResponse
 from src.core.utils.chat_logger import append_chat_summary
@@ -27,16 +29,17 @@ def build_messages(req: SummaryRequest) -> list:
     ]
 
 # 대화 요약 서비스 함수
-async def summarize_chat(req: SummaryRequest) -> SummaryResponse:
-    result = await generate_summary(req)  # ✅ messages 안 만들고 req 그대로 넘김
+async def summarize_chat(requests: List[SummaryRequest]) -> List[SummaryResponse]:
+    async def process_one(req: SummaryRequest) -> SummaryResponse:
+        result = await generate_summary(req)
+        try:
+            append_chat_summary(
+                session_id=result.sessionId,
+                summary=str(result.summary)
+            )
+        except Exception as e:
+            logger.warning("요약 CSV 저장 실패: %s", str(e), exc_info=True)
+        return result
 
-    try:
-        from src.core.utils.chat_logger import append_chat_summary
-        append_chat_summary(
-            session_id=result.sessionId,
-            summary=str(result.summary)  # ✅ static_summary 제거
-        )
-    except Exception as e:
-        logger.warning("요약 CSV 저장 실패: %s", str(e), exc_info=True)
-
-    return result
+    tasks = [process_one(r) for r in requests]
+    return await asyncio.gather(*tasks)
