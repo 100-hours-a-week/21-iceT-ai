@@ -21,3 +21,6 @@ test_inference.py
 # 비밀 키
 secret/
 *.json
+
+# sql
+*.sql

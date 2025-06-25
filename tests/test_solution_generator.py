@@ -4,60 +4,46 @@
 import pytest
 from src.schemas.solution_schema import SolutionRequest
 from src.crawler.solution_generater import generate_explanation
+from src.crawler.post_client import post_to_backend
+
 
 @pytest.mark.asyncio
 async def test_explain_solution():
     # 테스트용 문제 정의
     test_problem = {
-        "problem_number": 5430,
-        "title": "AC",
+        "problem_number": 1049,
+        "title": "기타줄",
         "description": (
-            "AC는 정수 배열에 연산을 수행하기 위해 만들어진 언어입니다. "
-            "이 언어에는 두 가지 함수 R(뒤집기)과 D(버리기)가 있습니다.\n\n"
-            "함수 R은 배열에 있는 수의 순서를 뒤집는 함수이고, "
-            "D는 배열의 첫 번째 수를 버리는 함수입니다. "
-            "배열이 비어있는데 D를 사용하면 에러가 발생합니다.\n\n"
-            "함수들은 조합해서 한 번에 연속 수행할 수 있습니다. "
-            "예를 들어, “AB”는 A를 수행한 다음에 바로 이어서 B를 수행하는 함수입니다. "
-            "“RDD”는 배열을 뒤집은 다음 처음 두 수를 버리는 연산을 의미합니다.\n\n"
-            "배열의 초기값과 수행할 함수가 주어졌을 때, 최종 결과를 구하는 프로그램을 작성하세요."
+            "Day Of Mourning의 기타리스트 강토가 사용하는 기타에서 N개의 줄이 끊어졌다. "
+            "따라서 새로운 줄을 사거나 교체해야 한다. 강토는 되도록이면 돈을 적게 쓰려고 한다. "
+            "6줄 패키지를 살 수도 있고, 1개 또는 그 이상의 줄을 낱개로 살 수도 있다.\n\n"
+            "끊어진 기타줄의 개수 N과 기타줄 브랜드 M개가 주어지고, 각각의 브랜드에서 파는 "
+            "기타줄 6개가 들어있는 패키지의 가격, 낱개로 살 때의 가격이 주어질 때, "
+            "적어도 N개를 사기 위해 필요한 돈의 수를 최소로 하는 프로그램을 작성하시오."
         ),
         "input": (
-            "첫째 줄에 테스트 케이스의 개수 T가 주어집니다. (T ≤ 100)\n"
-            "각 테스트 케이스 첫째 줄에는 수행할 함수 p가 주어집니다. (1 ≤ |p| ≤ 100,000)\n"
-            "다음 줄에는 배열에 들어있는 수의 개수 n이 주어집니다. (0 ≤ n ≤ 100,000)\n"
-            "다음 줄에는 [x1,x2,…,xn] 형태로 배열에 들어 있는 정수가 주어집니다. (1 ≤ xi ≤ 100)\n"
-            "전체 테스트 케이스에 걸쳐 p의 길이 합과 n의 합은 700,000을 넘지 않습니다."
+            "첫째 줄에 N과 M이 주어진다. N은 100보다 작거나 같은 자연수이고, "
+            "M은 50보다 작거나 같은 자연수이다.\n"
+            "둘째 줄부터 M개의 줄에는 각 브랜드의 패키지 가격과 낱개의 가격이 공백으로 구분되어 주어진다. "
+            "가격은 0보다 크거나 같고, 1,000보다 작거나 같은 정수이다."
         ),
         "output": (
-            "각 테스트 케이스에 대해, 주어진 정수 배열에 함수를 모두 수행한 결과를 출력합니다. "
-            "만약 중간에 D 연산을 수행할 때 배열이 비어 있으면 “error”를 출력하세요."
+            "기타줄을 적어도 N개 사기 위해 필요한 돈의 최솟값을 출력한다."
         ),
         "input_example": (
-            "4\n"
-            "RDD\n"
-            "4\n"
-            "[1,2,3,4]\n"
-            "DD\n"
-            "1\n"
-            "[42]\n"
-            "RRD\n"
-            "6\n"
-            "[1,1,2,3,5,8]\n"
-            "D\n"
-            "0\n"
-            "[]"
+            "4 2\n"
+            "12 3\n"
+            "15 4\n"
         ),
         "output_example": (
-            "[2,1]\n"
-            "error\n"
-            "[1,2,3,5,8]\n"
-            "error"
+            "12\n"
         )
     }
 
     request = SolutionRequest(**test_problem)
     response = await generate_explanation(request)
+    success = post_to_backend(test_problem["problem_number"], response)
+    assert success, "백엔드 전송에 실패했습니다"
     # response = await explain_solution(request)
 
     print("문제 개요:\n", response.problem_check.problem_description)
