@@ -15,7 +15,7 @@ class SolutionRequest(BaseModel):
 # response 중 문제 개요 및 알고리즘 설명
 class ProblemCheck(BaseModel):
     problem_description: str = Field(description="요약된 문제 개요, 문제 목표와 조건 요약")
-    algorithm: str = Field(description="사용된 알고리즘 종류, 정의, 작동 방법, 시간복잡도")
+    algorithm: str = Field(description="사용된 알고리즘 종류, 정의, 작동 방법, 시간복잡도를 포함한 내용")
 
 # response 중 언어별 정답 코드
 class SolutionCode(BaseModel):
