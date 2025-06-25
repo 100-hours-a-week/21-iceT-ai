@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import time
 import random
 import os
-import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,9 +12,7 @@ load_dotenv()
 # Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
-    temp_dir = tempfile.mkdtemp()
     options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
-    options.add_argument(f"--user-data-dir={temp_dir}")
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
