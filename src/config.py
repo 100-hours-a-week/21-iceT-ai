@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # model: str = "gemini-2.0-flash"
     model: str = "gemini-2.5-flash-preview-05-20"
     temperature: float = 0.3
-    max_tokens: int = 8192
+    max_tokens: int = 16384
 
 settings = Settings() 
 
