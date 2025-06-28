@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import time
 import random
 import os
+import tempfile
 from dotenv import load_dotenv
 import platform
 
@@ -20,6 +21,7 @@ USER_AGENTS = [
 # Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
+    temp_dir = tempfile.mkdtemp()
     system = platform.system()
     if system == "Windows":
         # Windows

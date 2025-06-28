@@ -5,7 +5,6 @@
 - llm_client.py => llm_solution.py
 - env, config.py, llm_solution.py도 파라미터 뒤에 _solution 추가
 - vector_store.py에서 load_vectorstore() 윈도우 환경 분기
-- solution_schema에서 camel style로 통일 후, snake style는 alias 설정
 - prompt_templates 에 프롬프트 추가
 
 ###

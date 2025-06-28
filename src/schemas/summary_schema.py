@@ -14,9 +14,7 @@ class Summary(BaseModel):
 class SummaryRequest(BaseModel):
     sessionId: str = Field(description="세션 ID")
     messages: List[Message] = Field(description="요약할 메시지 목록 (user/assistant role 포함)")
-    maxSentences: int = Field(default=3, description="요약 결과 최대 문장 수")
-    mode: str = Field(description="채팅 모드 (feedback 또는 interview)")
 
 class SummaryResponse(BaseModel):
     sessionId: str = Field(description="세션 ID")
-    summary: List[Summary] = Field(description="문제 정보와 대화 요약이 섞인 리스트")
+    summary: str = Field(description="문제 정보와 대화 요약을 담은 긴 텍스트")

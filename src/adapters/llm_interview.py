@@ -4,6 +4,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from src.config import settings
 from src.core.llm_key_manager import APIKeyManager
+from src.core.utils.stream_utils import wrap_stream_response
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -18,6 +19,11 @@ client = OpenAI(
 async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback
     try:
+        client = OpenAI(
+            api_key=solar_key_manager.next_key(),
+            base_url="https://api.upstage.ai/v1"
+        )
+
         response = client.chat.completions.create(
             model=settings.model_chat,
             temperature=settings.temperature_chat,
@@ -27,12 +33,7 @@ async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None):
         )
 
         if stream:
-            async def stream_generator():
-                for chunk in response:
-                    delta = chunk.choices[0].delta
-                    if delta and delta.content:
-                        yield f"data: {delta.content}\n\n"
-            return stream_generator()
+            return wrap_stream_response(response)
         else:
             return response.choices[0].message.content
 

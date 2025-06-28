@@ -1,76 +1,53 @@
-import json
+import httpx
 import asyncio
-from json import dumps
 from typing import AsyncGenerator
-from src.config import settings
+from src.config import settings, BACKEND_INTERVIEW_URL  # ✅ BACKEND_INTERVIEW_URL 추가
+from src.core.utils.history_utils import build_context_text
 from src.adapters.llm_interview import call_agent
-from src.schemas.interview_schema import (
-    InterviewStartRequest,
-    InterviewfollowRequest
-)
-from src.core.prompt_templates import (
-    INTERVIEW_START_PROMPT
-)
+from src.schemas.interview_schema import InterviewStartRequest, InterviewfollowRequest  # ✅ InterviewEndRequest 제거
+from src.core.prompt_templates import INTERVIEW_START_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, FINISH_DECISION_PROMPT, EVALUATION_AGENT_PROMPT
+from src.core.utils.stream_utils import wrap_static_response, wrap_stream_response
+import logging
 
-from src.core.prompt_templates import (
-    QUESTION_AGENT_PROMPT,
-    FOLLOWUP_AGENT_PROMPT,
-    FINISH_DECISION_PROMPT,
-    EVALUATION_AGENT_PROMPT
-)
-from src.core.utils.history_utils import build_context
+logger = logging.getLogger(__name__)
 
-def extract_problem_and_chat(summary_json: str):
-    problem_summary = []
-    chat_summary = []
+# ✅ 백엔드 인터뷰 종료 알림 비동기 POST 함수 (2-2)
+async def notify_interview_end(session_id: str):
     try:
-        items = json.loads(summary_json)
-        for item in items:
-            if item.get("type") == "problem":
-                problem_summary.append(item["content"])
-            elif item.get("type") == "chat":
-                chat_summary.append(item)
-    except Exception:
-        pass
-    return problem_summary, chat_summary
-
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                BACKEND_INTERVIEW_URL,
+                json={"sessionId": session_id, "isFinished": True},
+            )
+            if response.status_code != 200:
+                logging.warning(f"[notify_interview_end] 상태코드 {response.status_code}: {response.text}")
+    except Exception as e:
+        logging.warning(f"[notify_interview_end] 호출 실패: {e}")
 
 # ✅ /interview/start
 async def handle_interview_start(req: InterviewStartRequest):
     problem_text = f"{req.title}\n{req.description}\n입력: {req.inputRule}\n출력: {req.outputRule}\n예시: {req.inputExample} → {req.outputExample}"
-    prompt = INTERVIEW_START_PROMPT.format(
-        problem=problem_text,
-        language=req.codeLanguage
-    )
+    prompt = INTERVIEW_START_PROMPT.format(problem=problem_text, language=req.codeLanguage)
     return await call_agent(
         prompt,
         stream=True,
-        max_tokens=settings.max_tokens_interview_start  # ✅
+        max_tokens=settings.max_tokens_interview_start 
     )
 
-# ✅ /interview/answer
 async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
-    problem_summary, chat_summary = extract_problem_and_chat(req.summary or "")
-    context = build_context(messages, chat_summary)
+    context_text = build_context_text(messages, summary=req.summary)
 
-    # 🧱 context 문자열 생성
-    problem_text = "\n".join(f"[문제 요약] {c}" for c in problem_summary)
-    dialogue_text = "\n".join(f"{m['role']}: {m['content']}" for m in context)
-    full_context = f"{problem_text}\n{dialogue_text}" if problem_text else dialogue_text
-
-    # 📌 직전 assistant 질문과 user 응답
     previous_question = None
     user_response = None
     if len(messages) >= 2 and messages[-2]["role"] == "assistant" and messages[-1]["role"] == "user":
         previous_question = messages[-2]["content"]
         user_response = messages[-1]["content"]
 
-    # ⏱️ 병렬 실행 준비
     tasks = [
         call_agent(
             QUESTION_AGENT_PROMPT.format(
-                context=full_context,
+                context=context_text,
                 avoid_list="\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
             ),
             stream=False,
@@ -86,7 +63,7 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
         ),
         call_agent(
             FINISH_DECISION_PROMPT.format(
-                context=full_context
+                context=context_text
             ),
             stream=False,
             max_tokens=10
@@ -95,31 +72,22 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
 
     question, followup, finish_decision = await asyncio.gather(*tasks)
 
-    # 종료 여부 판단 문자열 정제
+    # 종료 여부 판단
     finish_raw = finish_decision.strip().lower()
-
-    # 인터뷰 종료 여부 판단
     if finish_raw == "true":
         evaluation = await call_agent(
             EVALUATION_AGENT_PROMPT.format(
-                context=full_context
+                context=context_text
             ),
             stream=True,
             max_tokens=settings.max_tokens_interview_end
         )
 
-        # 평가는 스트리밍 전송
-        async def evaluation_stream():
-            async for chunk in evaluation:
-                if not chunk.startswith("data: "):
-                    continue
-                content = chunk.removeprefix("data: ").strip()
-                yield f"data: {dumps({'is_finished': True, 'content': content})}\n\n"
-        return evaluation_stream()
+        # 🔄 비동기 종료 알림
+        asyncio.create_task(notify_interview_end(req.sessionId))
+
+        return wrap_stream_response(evaluation)
 
     # 종료가 아닌 경우 → 꼬리질문 우선 → 질문 fallback
     selected = followup.strip() if followup.strip() else question.strip()
-
-    async def stream_single():
-        yield f"data: {dumps({'is_finished': False, 'content': selected})}\n\n"
-    return stream_single()
+    return wrap_static_response(selected)

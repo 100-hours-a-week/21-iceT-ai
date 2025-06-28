@@ -1,6 +1,6 @@
 import requests
 from src.schemas.solution_schema import SolutionResponse
-from src.config import BACKEND_URL, BACKEND_TIMEOUT
+from src.config import BACKEND_SOLUTION_URL, BACKEND_TIMEOUT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def post_to_backend(problem_id: int, response: SolutionResponse):
     try:
         res = requests.post(
-            BACKEND_URL,
+            BACKEND_SOLUTION_URL,
             json=response.model_dump(),
             headers={
                 "Content-Type": "application/json"

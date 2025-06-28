@@ -1,58 +1,32 @@
-import os
-import logging
-import json
+import os, logging
 from openai import OpenAI
 from dotenv import load_dotenv
 from src.config import settings
 from src.core.llm_key_manager import APIKeyManager
-from src.schemas.summary_schema import SummaryRequest, SummaryResponse, Summary
+from src.schemas.summary_schema import SummaryRequest, SummaryResponse
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS"))
 
-client = OpenAI(
-    api_key=solar_key_manager.next_key(),
-    base_url="https://api.upstage.ai/v1"
-)
-
-summary_json_schema = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "type": {"type": "string", "enum": ["problem", "chat"]},
-            "speaker": {"type": "string", "enum": ["user", "ai", "system"]},
-            "intent": {"type": "string"},
-            "content": {"type": "string"},
-        },
-        "required": ["type", "speaker", "intent", "content"]
-    }
-}
-
 async def generate_summary(req: SummaryRequest) -> SummaryResponse:
-    from src.services.summary_service import build_messages  # 함수 내부에서 import
     try:
-        messages = build_messages(req)
+        client = OpenAI(
+            api_key=solar_key_manager.next_key(),
+            base_url="https://api.upstage.ai/v1"
+        )
+        
+        messages = messages(req)
         response = client.chat.completions.create(
             model=settings.model_chat,
             temperature=settings.temperature_chat,
             max_tokens=settings.max_tokens_summary,
-            messages=messages,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "summary_response",
-                    "strict": True,
-                    "schema": summary_json_schema,
-                }
-            }
         )
         content = response.choices[0].message.content
         return SummaryResponse(
             sessionId=req.sessionId,
-            summary=[Summary(**s) for s in json.loads(content)]
+            summary=content.strip()
         )
     except Exception as e:
         logger.error("요약 생성 실패", exc_info=True)

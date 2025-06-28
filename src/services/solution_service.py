@@ -1,4 +1,4 @@
-import logging
+import logging, re
 from src.core.prompt_templates import SOLUTION_PROMPT
 from src.adapters.llm_solution import generate_solution
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
@@ -15,16 +15,16 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
 
     prompt = SOLUTION_PROMPT.invoke(
         {
-            "problemNumber":  req.problemNumber,
+            "problem_number": req.problem_number,
             "title":          req.title,
             "description":    req.description,
             "input":          req.input,
             "output":         req.output,
-            "inputExample":   req.inputExample,
-            "outputExample":  req.outputExample,
+            "input_example":  req.input_example,
+            "output_example": req.output_example,
             "context":        context
         }
     )
-
+    
     result = await generate_solution(prompt)
     return result
