@@ -12,8 +12,8 @@ load_dotenv()
 
 # Gemini 모델 설정 
 class Settings(BaseSettings):
-    # model: str = "gemini-2.0-flash"
-    model: str = "gemini-2.5-flash-preview-05-20"
+    # model: str = "gemini-2.5-flash-preview-05-20"
+    model: str = "gemini-2.5-flash"
     temperature: float = 0.3
     max_tokens: int = 16384
 
