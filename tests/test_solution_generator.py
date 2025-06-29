@@ -2,51 +2,53 @@
 # 실행 방법 : python -m pytest -s tests/test_solution_generator.py
 
 import pytest
-from src.schemas.solution_schema import SolutionRequest
-from src.crawler.solution_generater import generate_explanation
-from src.crawler.post_client import post_to_backend
-
+from schemas.v1.solution_schema import SolutionRequest
+from crawler.v1.solution_generater import generate_explanation
+from crawler.v1.post_client import post_to_backend
 
 @pytest.mark.asyncio
-async def test_explain_solution():
-    # 테스트용 문제 정의
-    test_problem = {
-        "problem_number": 1049,
-        "title": "기타줄",
-        "description": (
-            "Day Of Mourning의 기타리스트 강토가 사용하는 기타에서 N개의 줄이 끊어졌다. "
-            "따라서 새로운 줄을 사거나 교체해야 한다. 강토는 되도록이면 돈을 적게 쓰려고 한다. "
-            "6줄 패키지를 살 수도 있고, 1개 또는 그 이상의 줄을 낱개로 살 수도 있다.\n\n"
-            "끊어진 기타줄의 개수 N과 기타줄 브랜드 M개가 주어지고, 각각의 브랜드에서 파는 "
-            "기타줄 6개가 들어있는 패키지의 가격, 낱개로 살 때의 가격이 주어질 때, "
-            "적어도 N개를 사기 위해 필요한 돈의 수를 최소로 하는 프로그램을 작성하시오."
-        ),
-        "input": (
-            "첫째 줄에 N과 M이 주어진다. N은 100보다 작거나 같은 자연수이고, "
-            "M은 50보다 작거나 같은 자연수이다.\n"
-            "둘째 줄부터 M개의 줄에는 각 브랜드의 패키지 가격과 낱개의 가격이 공백으로 구분되어 주어진다. "
-            "가격은 0보다 크거나 같고, 1,000보다 작거나 같은 정수이다."
-        ),
-        "output": (
-            "기타줄을 적어도 N개 사기 위해 필요한 돈의 최솟값을 출력한다."
-        ),
-        "input_example": (
-            "4 2\n"
-            "12 3\n"
-            "15 4\n"
-        ),
-        "output_example": (
-            "12\n"
-        )
-    }
+async def test_explain_solutions():
+    # 처리할 문제들을 dict 형태로 리스트에 나열
+    raw_problems = [
+        {
+            "problem_number": 1109,
+            "title": "섬",
+            "description": (
+                "지도가 주어졌을 때, 섬의 높이를 계산하는 문제이다. "
+                "섬은 'x'가 가로, 세로, 대각선으로 연결된 그룹으로 정의되며, "
+                "섬 A가 다른 섬 B를 포함하면 B를 포함하는 A의 높이는 B의 높이 + 1이다. "
+                "지도에서 각 높이에 해당하는 섬의 개수를 출력한다."
+            ),
+            "input": (
+                "첫째 줄에 N과 M이 주어진다. "
+                "둘째 줄부터 N개의 줄에 지도가 주어진다. "
+                "지도는 'x' 또는 '.'으로 이루어져 있고, N과 M은 50 이하의 자연수이다."
+            ),
+            "output": (
+                "높이가 0인 섬의 개수부터 최대 높이에 해당하는 섬의 개수까지 공백으로 구분하여 출력한다. "
+                "섬이 하나도 없으면 -1을 출력한다."
+            ),
+            "input_example": (
+                "5 5\n"
+                "xxxxx\n"
+                "x...x\n"
+                "x.x.x\n"
+                "x...x\n"
+                "xxxxx\n"
+            ),
+            "output_example": (
+                "1 1\n"
+            )
+        },
+    ]
 
-    request = SolutionRequest(**test_problem)
-    response = await generate_explanation(request)
-    success = post_to_backend(test_problem["problem_number"], response)
-    assert success, "백엔드 전송에 실패했습니다"
-    # response = await explain_solution(request)
+    for prob in raw_problems:
+        request = SolutionRequest(**prob)
+        response = await generate_explanation(request)
+        success = post_to_backend(request.problem_number, response)
+        assert success, f"백엔드 전송에 실패했습니다: {request.problem_number}"
 
-    print("문제 개요:\n", response.problem_check.problem_description)
-    print("사용 알고리즘:\n", response.problem_check.algorithm)
-    print("풀이 단계:\n", response.problem_solving)
-    print("정답 코드 (Python):\n", response.solution_code.python)
+        print("문제 개요:\n", response.problem_check.problem_description)
+        print("사용 알고리즘:\n", response.problem_check.algorithm)
+        print("풀이 단계:\n", response.problem_solving)
+        print("정답 코드 (Python):\n", response.solution_code.python)
