@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 from src.config import settings
 from dotenv import load_dotenv
-from schemas.v2.solution_schema_v2 import SolutionResponse
+from src.schemas.v2.solution_schema_v2 import SolutionResponse
 
 # 환경변수 로드
 load_dotenv()
@@ -16,16 +16,16 @@ logger = logging.getLogger(__name__)
 # 1) genai 클라이언트 생성
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-async def generate_solution(prompt_text: str) -> SolutionResponse:
+def generate_solution(prompt_text: str) -> SolutionResponse:
     try:
         response = client.models.generate_content(
             model=settings.model,
             contents=prompt_text,
             config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=SolutionResponse,
-                temperature=settings.temperature,
-                max_output_tokens=settings.max_tokens,
+            response_mime_type="application/json",
+            response_schema=SolutionResponse,
+            temperature=settings.temperature,
+            max_output_tokens=settings.max_tokens, 
             ),
         )
         return response.parsed
