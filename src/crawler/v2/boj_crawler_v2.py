@@ -14,12 +14,15 @@ load_dotenv()
 # 서버에서 실행 가능한 코드
 def create_driver():
     # 1) 임시 디렉터리 생성
-    profile_dir = tempfile.mkdtemp(prefix="chrome_profile_")  # 추가된 부분
+    session_id = os.getpid()
+    profile_dir = f"/crawler/tmp_profile/session_{session_id}"
+    os.makedirs(profile_dir, exist_ok=True) 
 
     options = Options()
-    options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
-    options.add_argument("--headless=new")
+    options.binary_location = "/crawler/chrome/chrome"
+    options.add_argument("--headless")
     options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
     options.add_argument(f"--user-data-dir={profile_dir}")        # 추가된 부분
@@ -27,7 +30,7 @@ def create_driver():
                          "AppleWebKit/537.36 (KHTML, like Gecko) "
                          "Chrome/115.0.0.0 Safari/537.36")
 
-    service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
+    service = Service("/crawler/chrome/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
 
     # 추가된 함수
