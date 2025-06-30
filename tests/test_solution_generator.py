@@ -2,9 +2,9 @@
 # 실행 방법 : python -m pytest -s tests/test_solution_generator.py
 
 import pytest
-from schemas.v1.solution_schema import SolutionRequest
-from crawler.v1.solution_generater import generate_explanation
-from crawler.v1.post_client import post_to_backend
+from src.schemas.v1.solution_schema import SolutionRequest
+from src.crawler.v1.solution_generater import generate_explanation
+from src.crawler.v1.post_client import post_to_backend
 
 @pytest.mark.asyncio
 async def test_explain_solutions():

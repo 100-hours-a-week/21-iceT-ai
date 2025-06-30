@@ -1,7 +1,7 @@
 import logging, anyio
-from core.v1.prompt_templates import SOLUTION_PROMPT
-from adapters.v1.llm_client import generate_solution
-from schemas.v1.solution_schema import SolutionRequest, SolutionResponse
+from src.core.v1.prompt_templates import SOLUTION_PROMPT
+from src.adapters.v1.llm_client import generate_solution
+from src.schemas.v1.solution_schema import SolutionRequest, SolutionResponse
 from src.core.vector_store import load_vectorstore
 
 # 로깅
