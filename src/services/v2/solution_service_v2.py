@@ -1,7 +1,7 @@
 import logging
-from core.v2.prompt_templates_v2 import SOLUTION_PROMPT
-from adapters.v2.llm_client_v2 import generate_solution
-from schemas.v2.solution_schema_v2 import SolutionRequest, SolutionResponse
+from src.core.v2.prompt_templates_v2 import SOLUTION_PROMPT
+from src.adapters.v2.llm_client_v2 import generate_solution
+from src.schemas.v2.solution_schema_v2 import SolutionRequest, SolutionResponse
 from src.core.vector_store import load_vectorstore
 
 # 로깅
@@ -29,5 +29,5 @@ async def explain_solution(req: SolutionRequest) -> SolutionResponse:
             "context":        context
         }
     )
-    result = await generate_solution(prompt.text) # 요부분!
+    result = generate_solution(prompt.text) # 요부분!
     return result
