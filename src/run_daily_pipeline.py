@@ -1,11 +1,12 @@
 # 실행 파일 (매일 아침 10시에 실행)
+# python -m src.run_daily_pipeline
 
 # 백준 문제 크롤링 및 해설지 생성을 위한 메인 함수 
 import asyncio
 import logging
 from src.crawler.daily_crawler import get_today_workbook_id, get_problem_ids_from_workbook
-from crawler.v2.boj_crawler_v2 import login_with_cookies, create_driver, crawl_boj_problem_with_selenium
-from crawler.v2.pipeline_v2 import crawl_generate_post
+from src.crawler.v2.boj_crawler_v2 import login_with_cookies, create_driver, crawl_boj_problem_with_selenium
+from src.crawler.v2.pipeline_v2 import crawl_generate_post
 from src.core.logger import setup_logging
 
 setup_logging()

@@ -11,9 +11,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 서버에서 실행 가능한 코드
 def create_driver():
     # 1) 임시 디렉터리 생성
-    profile_dir = tempfile.mkdtemp(prefix="chrome_profile_")
+    profile_dir = tempfile.mkdtemp(prefix="chrome_profile_")  # 추가된 부분
 
     options = Options()
     options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
@@ -21,7 +22,7 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument(f"--user-data-dir={profile_dir}")        # ← 여기를 추가!
+    options.add_argument(f"--user-data-dir={profile_dir}")        # 추가된 부분
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                          "AppleWebKit/537.36 (KHTML, like Gecko) "
                          "Chrome/115.0.0.0 Safari/537.36")
@@ -29,6 +30,7 @@ def create_driver():
     service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
 
+    # 추가된 함수
     # 자동으로 잠긴 프로필 정리
     def _cleanup():
         try:
@@ -117,7 +119,9 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
         }
     
 
-# 로컬에서 실행 가능한 코드
+########################################################################################################################################################
+
+# # 로컬에서 실행 가능한 코드
 
 # def create_driver():
 #     options = Options()
@@ -155,3 +159,46 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
 #     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
 #     "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Mobile/15E148 Safari/604.1"
 # ]
+
+# # 백준 문제를 크롤링하는 함수
+# def crawl_boj_problem_with_selenium(driver, problem_id):
+#     url = f"https://www.acmicpc.net/problem/{problem_id}"
+#     try:
+#         driver.get(url)
+#         time.sleep(random.uniform(1.5, 3.0))
+        
+#         soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+#         def safe_select(selector):
+#             tag = soup.select_one(selector)
+#             return tag.text.strip() if tag else ""
+
+#         # 문제 구성 요소 파싱
+#         title = safe_select("#problem_title")
+#         description = safe_select("#problem_description")
+#         input_desc = safe_select("#problem_input")
+#         output_desc = safe_select("#problem_output")
+#         ex_inputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-input-"]')]
+#         ex_outputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-output-"]')]
+
+#         return {
+#             "problem_number": problem_id,
+#             "title": title,
+#             "description": description,
+#             "input": input_desc,
+#             "output": output_desc,
+#             "input_example": ex_inputs,
+#             "output_example": ex_outputs
+#         }
+
+#     except Exception as e:
+#         print(f"[오류] 문제 {problem_id} 처리 실패: {e}")
+#         return {
+#             "problem_number": problem_id,
+#             "title": "",
+#             "description": "",
+#             "input": "",
+#             "output": "",
+#             "input_example": "",
+#             "output_example": ""
+#         }
