@@ -2,49 +2,49 @@
 # 실행 방법 : python -m pytest -s tests/test_solution_generator_v2.py
 
 import pytest
-from src.schemas.solution_schema import SolutionRequest
-from src.crawler.solution_generater import generate_explanation
-from src.crawler.post_client import post_to_backend
+from src.schemas.v2.solution_schema_v2 import SolutionRequest
+from src.crawler.v2.solution_generater_v2 import generate_explanation
+from src.crawler.v2.post_client_v2 import post_to_backend
 
 @pytest.mark.asyncio
 async def test_explain_solutions():
     # 처리할 문제들을 dict 형태로 리스트에 나열
     raw_problems = [
         {
-            "problem_number": 16173,
-            "title": "점프왕 쩰리 (Small)",
+            "problem_number": 1171,
+            "title": "사오정",
             "description": (
-                "‘쩰리’는 점프하는 것을 좋아하는 젤리다. 단순히 점프하는 것에 지루함을 느낀 ‘쩰리’는 새로운 점프 게임을 해보고 싶어 한다.\n\n"
-                "게임 구역은 N×N 크기의 정사각형이며, 각 칸에는 이동 거리(0 이상 100 이하) 또는 목표 지점(-1)이 쓰여 있다.\n"
-                "‘쩰리’는 맨 왼쪽 위 칸(1,1)에서 시작하며, 한 번에 이동할 수 있는 칸 수는 현재 칸에 쓰여 있는 숫자와 정확히 같다.\n"
-                "이동 가능 방향은 오른쪽 또는 아래뿐이며, 구역을 벗어나면 즉시 패배한다.\n"
-                "목표 지점 칸(-1)에 도달하면 게임에서 즉시 승리한다.\n\n"
-                "주어진 맵에서 ‘쩰리’가 목표 지점에 도달할 수 있는지 판단하는 프로그램을 작성하시오."
+                "민식이는 다른 사람이 말한 N비트 이진수를 2진수로 듣되, 원본의 i번째 비트가 인식된 이진수의 j번째 비트로 옮겨질 때 |j - i| ≤ D를 항상 만족하도록 왜곡되어 인식한다. "
+                "이렇게 얻을 수 있는 모든 N비트 이진수 후보의 개수와, 그 후보들을 오름차순으로 정렬했을 때 K번째로 작은 이진수를 구하라."
             ),
             "input": (
-                "첫째 줄에 게임 구역의 크기 N이 주어진다. (2 ≤ N ≤ 3)\n"
-                "그 다음 N개의 줄에 게임판 정보가 주어진다.\n"
-                "각 줄에는 N개의 정수가 주어지며, 마지막 칸(골인 지점)에는 -1이 쓰여 있고, 나머지는 0 이상 100 이하이다."
+                "첫째 줄에 이진수 비트의 개수 N, 왜곡 허용 최대 거리 D, 정수 K가 공백으로 구분되어 주어진다. "
+                "둘째 줄에 상대방이 말한 N비트 이진수가 주어진다."
             ),
             "output": (
-                "‘쩰리’가 목표 지점에 도달할 수 있으면 “HaruHaru”를, 도달할 수 없으면 “Hing”을 출력한다."
+                "첫째 줄에 후보 이진수의 총 개수를 100,000,000으로 나눈 나머지를 출력하고, "
+                "둘째 줄에 후보 중 K번째로 작은 이진수를 출력한다."
             ),
             "input_example": (
-                "3\n"
-                "1 1 10\n"
-                "1 5 1\n"
-                "2 2 -1\n"
+                "4 1 3\n"
+                "0110\n"
             ),
             "output_example": (
-                "HaruHaru\n"
+                "4\n"
+                "1001\n"
             )
         },
-        # 나중에 여기에 raw_problems.append(다른 문제 dict) 추가 가능
     ]
 
     for prob in raw_problems:
         request = SolutionRequest(**prob)
         response = await generate_explanation(request)
+        if response is None:
+            print("test - LLM 응답 없음")
+            return None
+        if not hasattr(response, "model_dump"):
+            print("test - Pydantic 응답 아님:", type(response))
+            return None
         success = post_to_backend(request.problem_number, response)
         assert success, f"백엔드 전송에 실패했습니다: {request.problem_number}"
 

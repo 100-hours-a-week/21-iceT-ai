@@ -3,7 +3,7 @@ import logging, asyncio
 from langchain_google_genai import ChatGoogleGenerativeAI
 from src.config import settings
 from dotenv import load_dotenv
-from src.schemas.solution_schema import SolutionResponse
+from src.schemas.v1.solution_schema import SolutionResponse
 import os
 
 # 환경변수 로드

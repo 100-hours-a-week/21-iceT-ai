@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
-from schemas.v1.solution_schema import SolutionRequest, SolutionResponse
-from services.v1.solution_service import explain_solution
+from schemas.v2.solution_schema_v2 import SolutionRequest, SolutionResponse
+from services.v2.solution_service_v2 import explain_solution
 from src.config import SERVICE_API_KEY
 
 router = APIRouter()
@@ -20,7 +20,7 @@ def verify_api_key(x_api_key: str = Header(...)):
 # - 요청 본문: SolutionRequest 스키마 (문제 정보 포함)
 # - 응답: SolutionResponse 스키마 (해설, 정답 코드 포함)
 
-# POST /api/ai/v1/solution
+# POST /api/ai/v2/solution
 @router.post(
     "/solution",
     response_model=SolutionResponse,
