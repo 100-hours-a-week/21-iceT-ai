@@ -9,7 +9,11 @@ from src.core.utils.stream_utils import wrap_stream_response
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS"))
+solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS").split(","))
+
+print("🔑 Loaded SOLAR_API_KEYS =", os.getenv("SOLAR_API_KEYS"))
+key = solar_key_manager.next_key()
+print(f"[DEBUG] Using key: {key}")
 
 async def call_feedback_llm(prompt: str, stream: bool = True, max_tokens: int = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback

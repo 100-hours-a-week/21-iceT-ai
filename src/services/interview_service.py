@@ -86,8 +86,4 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
         # 🔄 비동기 종료 알림
         asyncio.create_task(notify_interview_end(req.sessionId))
 
-        return wrap_stream_response(evaluation)
-
-    # 종료가 아닌 경우 → 꼬리질문 우선 → 질문 fallback
-    selected = followup.strip() if followup.strip() else question.strip()
-    return wrap_static_response(selected)
+        return evaluation  # ✅ wrap_stream_response 제거

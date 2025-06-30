@@ -13,12 +13,11 @@ async def handle_feedback_start(req: FeedbackRequest):
         code=req.code,
         language=req.codeLanguage,
     )
-    response = await call_feedback_llm(
+    return await call_feedback_llm(
         prompt,
         stream=True,
         max_tokens=settings.max_tokens_feedback_start
     )
-    return wrap_stream_response(response)  # 래핑 적용
 
 # 후속 피드백 (answer)
 async def handle_feedback_answer(req: FeedbackfollowRequest):
@@ -30,9 +29,9 @@ async def handle_feedback_answer(req: FeedbackfollowRequest):
         user_input=req.messages[-1].content
     )
 
-    response = await call_feedback_llm(
+    return await call_feedback_llm(
         prompt,
         stream=True,
         max_tokens=settings.max_tokens_feedback_answer
     )
-    return wrap_stream_response(response)  # 래핑 적용
+
