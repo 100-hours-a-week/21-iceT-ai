@@ -1,4 +1,4 @@
-import os, hashlib, logging
+import os, platform, logging
 from google.cloud import storage
 from langchain_community.vectorstores import FAISS
 from src.core.embedding_model import get_embedder
@@ -37,13 +37,18 @@ def download_faiss_from_gcs():
 # FAISS 벡터스토어 로딩 (GCS에서 받아온 인덱스 기반)
 def load_vectorstore():
     try:
-        download_faiss_from_gcs()
+        if platform.system() != "Windows":
+            download_faiss_from_gcs()
+
         embedder = get_embedder()
+        index_dir = "vector/faiss_index" if platform.system() == "Windows" else LOCAL_INDEX_DIR
+
         return FAISS.load_local(
-            LOCAL_INDEX_DIR,
+            index_dir,
             embeddings=embedder,
             allow_dangerous_deserialization=True
         )
+
     except Exception as e:
         logger.error(f"벡터스토어 로딩 오류: {e}")
         raise e

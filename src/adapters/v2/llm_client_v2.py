@@ -19,13 +19,13 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 def generate_solution(prompt_text: str) -> SolutionResponse:
     try:
         response = client.models.generate_content(
-            model=settings.model,
+            model=settings.model_solution,
             contents=prompt_text,
             config=types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=SolutionResponse,
-            temperature=settings.temperature,
-            max_output_tokens=settings.max_tokens, 
+            temperature=settings.temperature_solution,
+            max_output_tokens=settings.max_tokens_solution, 
             ),
         )
         return response.parsed

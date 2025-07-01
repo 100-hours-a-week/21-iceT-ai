@@ -2,20 +2,20 @@
 
 import requests
 from src.schemas.v1.solution_schema import SolutionResponse
-from src.config import BACKEND_URL, BACKEND_TIMEOUT, SERVICE_API_KEY
+from src.config import BACKEND_SOLUTION_URL, BACKEND_TIMEOUT, SERVICE_API_KEY
 import logging
 
 logger = logging.getLogger(__name__)
 
 # 백엔드에 해설 데이터 전송
-# - 요청 URL: BACKEND_URL
+# - 요청 URL: BACKEND_SOLUTIONURL
 # - 요청 헤더: Content-Type: application/json
 # - 요청 바디: SolutionResponse 스키마
 # - 로깅: 성공 시 성공 메시지, 실패 시 실패 메시지
 def post_to_backend(problem_id: int, response: SolutionResponse):
     try:
         res = requests.post(
-            BACKEND_URL,
+            BACKEND_SOLUTION_URL,
             json=response.model_dump(),
             headers={
                 "Content-Type": "application/json" # ,
