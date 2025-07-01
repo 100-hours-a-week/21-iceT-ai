@@ -15,7 +15,7 @@ print("🔑 Loaded SOLAR_API_KEYS =", os.getenv("SOLAR_API_KEYS"))
 key = solar_key_manager.next_key()
 print(f"[DEBUG] Using key: {key}")
 
-async def call_feedback_llm(prompt: str, stream: bool = True, max_tokens: int = None):
+async def call_feedback_llm(prompt: str, stream: bool = True, max_tokens: int = None, session_id: str = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback
     try:
         client = OpenAI(
@@ -32,7 +32,7 @@ async def call_feedback_llm(prompt: str, stream: bool = True, max_tokens: int = 
         )
 
         if stream:
-            return wrap_stream_response(response)
+            return wrap_stream_response(response, session_id=session_id)
         else:
             return response.choices[0].message.content
 

@@ -1,17 +1,18 @@
-import httpx
-import asyncio
+import httpx, asyncio
+from datetime import datetime
 from typing import AsyncGenerator
-from src.config import settings, BACKEND_INTERVIEW_URL  # ✅ BACKEND_INTERVIEW_URL 추가
+from src.config import settings, BACKEND_INTERVIEW_URL
+from src.core.utils.chat_logger import append_chat_session, append_chat_record
 from src.core.utils.history_utils import build_context_text
 from src.adapters.llm_interview import call_agent
-from src.schemas.interview_schema import InterviewStartRequest, InterviewfollowRequest  # ✅ InterviewEndRequest 제거
-from src.core.prompt_templates import INTERVIEW_START_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, FINISH_DECISION_PROMPT, EVALUATION_AGENT_PROMPT
-from src.core.utils.stream_utils import wrap_static_response, wrap_stream_response
+from src.schemas.interview_schema import InterviewStartRequest, InterviewfollowRequest
+from src.core.prompt_templates import INTERVIEW_START_PROMPT, INTERVIEW_FLOW_DECIDER_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, EVALUATION_AGENT_PROMPT
+from src.core.utils.chat_logger import append_chat_record
 import logging
 
 logger = logging.getLogger(__name__)
 
-# ✅ 백엔드 인터뷰 종료 알림 비동기 POST 함수 (2-2)
+#  백엔드 인터뷰 종료 알림 비동기 POST 함수 (2-2)
 async def notify_interview_end(session_id: str):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -24,66 +25,78 @@ async def notify_interview_end(session_id: str):
     except Exception as e:
         logging.warning(f"[notify_interview_end] 호출 실패: {e}")
 
-# ✅ /interview/start
+#  /interview/start
 async def handle_interview_start(req: InterviewStartRequest):
+    append_chat_session(req.sessionId, req.problemNumber, req.title, datetime.now().isoformat())
+    append_chat_record(req.sessionId, "user", req.code)
+
     problem_text = f"{req.title}\n{req.description}\n입력: {req.inputRule}\n출력: {req.outputRule}\n예시: {req.inputExample} → {req.outputExample}"
     prompt = INTERVIEW_START_PROMPT.format(problem=problem_text, language=req.codeLanguage)
     return await call_agent(
         prompt,
         stream=True,
-        max_tokens=settings.max_tokens_interview_start 
+        max_tokens=settings.max_tokens_interview_start,
+        session_id=req.sessionId, 
     )
 
 async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
+
+    last_user_msg = next((m.content for m in reversed(req.messages) if m.role == "user"), None)
+    if last_user_msg:
+        append_chat_record(req.sessionId, "user", last_user_msg)
+
     context_text = build_context_text(messages, summary=req.summary)
 
-    previous_question = None
-    user_response = None
-    if len(messages) >= 2 and messages[-2]["role"] == "assistant" and messages[-1]["role"] == "user":
-        previous_question = messages[-2]["content"]
-        user_response = messages[-1]["content"]
+    # 대화 흐름 판단 (followup / question / end)
+    flow_decision = await call_agent(
+        INTERVIEW_FLOW_DECIDER_PROMPT.format(context=context_text),
+        stream=False,
+        max_tokens=10
+    )
 
-    tasks = [
-        call_agent(
-            QUESTION_AGENT_PROMPT.format(
-                context=context_text,
-                avoid_list="\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
-            ),
-            stream=False,
-            max_tokens=settings.max_tokens_interview_start
-        ),
-        call_agent(
-            FOLLOWUP_AGENT_PROMPT.format(
-                previous_question=previous_question or "",
-                user_response=user_response or ""
-            ),
-            stream=False,
-            max_tokens=settings.max_tokens_interview_start
-        ),
-        call_agent(
-            FINISH_DECISION_PROMPT.format(
-                context=context_text
-            ),
-            stream=False,
-            max_tokens=10
-        )
-    ]
+    decision = flow_decision.strip().lower()
 
-    question, followup, finish_decision = await asyncio.gather(*tasks)
-
-    # 종료 여부 판단
-    finish_raw = finish_decision.strip().lower()
-    if finish_raw == "true":
-        evaluation = await call_agent(
-            EVALUATION_AGENT_PROMPT.format(
-                context=context_text
-            ),
+    #  종료 판단 → 총평 스트리밍
+    if decision == "end":
+        evaluation_stream = await call_agent(
+            EVALUATION_AGENT_PROMPT.format(context=context_text),
             stream=True,
-            max_tokens=settings.max_tokens_interview_end
+            max_tokens=settings.max_tokens_interview_end,
+            session_id=req.sessionId,
         )
 
         # 🔄 비동기 종료 알림
         asyncio.create_task(notify_interview_end(req.sessionId))
 
-        return evaluation  # ✅ wrap_stream_response 제거
+        return evaluation_stream  #  stream 그대로 반환
+
+    #  followup or question → 스트리밍 질문 생성
+    if decision == "followup":
+        previous_question = messages[-2]["content"] if len(messages) >= 2 and messages[-2]["role"] == "assistant" else ""
+        user_response = messages[-1]["content"] if len(messages) >= 1 and messages[-1]["role"] == "user" else ""
+
+        followup_stream = await call_agent(
+            FOLLOWUP_AGENT_PROMPT.format(
+                previous_question=previous_question,
+                user_response=user_response
+            ),
+            stream=True,
+            max_tokens=settings.max_tokens_interview_start,
+            session_id=req.sessionId,
+        )
+        return followup_stream
+
+    else:  # "question" 또는 fallback
+        avoid_list = "\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
+
+        question_stream = await call_agent(
+            QUESTION_AGENT_PROMPT.format(
+                context=context_text,
+                avoid_list=avoid_list
+            ),
+            stream=True,
+            max_tokens=settings.max_tokens_interview_start,
+            session_id=req.sessionId,
+        )
+        return question_stream

@@ -144,7 +144,25 @@ INTERVIEW_START_PROMPT = PromptTemplate(
 """
 )
 
-# 1. 질문 생성 에이전트
+INTERVIEW_FLOW_DECIDER_PROMPT = PromptTemplate(
+    input_variables=["context"],
+    template="""
+당신은 인터뷰 대화 흐름을 판단하는 AI입니다.
+
+다음은 지금까지의 면접 대화입니다:
+{context}
+
+당신은 다음 중 하나를 선택하세요:
+
+- 'question' : 새로운 주제로 다음 질문을 생성해야 할 때
+- 'followup' : 사용자의 마지막 응답을 더 깊이 파고들 질문이 필요할 때
+- 'end' : 면접이 충분히 진행되었고 평가를 해야 할 때
+
+주의: 반드시 하나의 단어만 출력하세요.
+"""
+)
+
+# 질문 생성 에이전트
 QUESTION_AGENT_PROMPT = PromptTemplate(
     input_variables=["context", "avoid_list"],
     template="""
@@ -166,7 +184,7 @@ QUESTION_AGENT_PROMPT = PromptTemplate(
 """
 )
 
-# 2. 꼬리 질문 에이전트
+# 꼬리 질문 에이전트
 FOLLOWUP_AGENT_PROMPT = PromptTemplate(
     input_variables=["previous_question", "user_response"],
     template="""
@@ -185,25 +203,8 @@ FOLLOWUP_AGENT_PROMPT = PromptTemplate(
 """
 )
 
-# 3. 종료 판단 에이전트
-FINISH_DECISION_PROMPT = PromptTemplate(
-    input_variables=["context"],
-    template="""
-당신은 인터뷰 종료 여부를 판단하는 AI입니다.
 
-다음은 지금까지의 인터뷰 대화입니다:
-
-{context}
-
-판단 기준:
-- 더 이상 의미 있는 질문이 없고, 충분히 평가할 수 있다고 판단되면 True
-- 그렇지 않으면 False
-
-주의: 반드시 'True' 또는 'False' 둘 중 하나만 출력하세요. 다른 말은 하지 마세요.
-"""
-)
-
-# 4. 평가 에이전트
+# 평가 에이전트
 EVALUATION_AGENT_PROMPT = PromptTemplate(
     input_variables=["context"],
     template="""

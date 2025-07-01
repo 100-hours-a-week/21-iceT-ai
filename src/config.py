@@ -29,5 +29,5 @@ class Settings(BaseSettings):
 settings = Settings() 
 
 BACKEND_SOLUTION_URL = os.getenv("BACKEND_SOLUTION_URL")
-BACKEND_INTERVIEW_URL = os.getenv("BACKEND_INTERVIEW_URL")
+BACKEND_INTERVIEW_URL = os.getenv("BACKEND_INTERVIEW_URL", "")
 BACKEND_TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "10.0"))

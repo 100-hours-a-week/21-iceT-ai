@@ -16,7 +16,7 @@ client = OpenAI(
     base_url="https://api.upstage.ai/v1"
 )
 
-async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None):
+async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None, session_id: str = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback
     try:
         client = OpenAI(
@@ -33,7 +33,7 @@ async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None):
         )
 
         if stream:
-            return wrap_stream_response(response)
+            return wrap_stream_response(response, session_id=session_id)
         else:
             return response.choices[0].message.content
 
