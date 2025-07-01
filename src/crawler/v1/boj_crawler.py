@@ -5,23 +5,49 @@ from bs4 import BeautifulSoup
 import time
 import random
 import os
+import tempfile
 from dotenv import load_dotenv
+import platform
 
 load_dotenv()
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0 Mobile/15E148 Safari/604.1"
+]
 
 # Selenium Chrome 드라이버 생성 함수
 def create_driver():
     options = Options()
-    options.binary_location = "/home/ubuntu/chrome/chrome-linux64/chrome"
+    temp_dir = tempfile.mkdtemp()
+    system = platform.system()
+    if system == "Windows":
+        # Windows
+        chrome_path = None
+        driver_path = "C:/Users/dodam/chromedriver.exe"
+        user_agent = USER_AGENTS[0]
+    elif system == "Darwin":
+        # MacOS
+        chrome_path = None
+        driver_path = "/Users/junsu/Downloads/chromedriver-mac-arm64/chromedriver"
+        user_agent = USER_AGENTS[1]
+    else:
+        # Linux/Ubuntu
+        chrome_path = "/home/ubuntu/chrome/chrome-linux64/chrome"
+        driver_path = "/home/ubuntu/chrome/chromedriver-linux64/chromedriver"
+        user_agent = USER_AGENTS[2]
+
+    if chrome_path:
+        options.binary_location = chrome_path
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                         "AppleWebKit/537.36 (KHTML, like Gecko) "
-                         "Chrome/115.0.0.0 Safari/537.36")
+    options.add_argument(f"user-agent={user_agent}")
 
-    service = Service("/home/ubuntu/chrome/chromedriver-linux64/chromedriver")
+    service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
        "source": """
@@ -67,7 +93,6 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
             tag = soup.select_one(selector)
             return tag.text.strip() if tag else ""
 
-        # 문제 구성 요소 파싱
         title = safe_select("#problem_title")
         description = safe_select("#problem_description")
         input_desc = safe_select("#problem_input")

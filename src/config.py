@@ -21,16 +21,17 @@ class Settings(BaseSettings):
 
     max_summary_sentences_problem: int = 4
     max_summary_sentences_chat: int = 10
-    max_recent_messages: int = 8
-    max_summary_messages: int = 30
+    max_recent_messages: int = 10
+    max_summary_messages: int = 10
 
     model_config = {"protected_namespaces": ("settings_",)}
 
 settings = Settings() 
 
 # 백앤드 설정
-BACKEND_SOLUTION_URL     = os.getenv("BACKEND_SOLUTION_URL")
+BACKEND_SOLUTION_URL = os.getenv("BACKEND_SOLUTION_URL")
 BAEKJUN_BACKEND_URL = os.getenv("BAEKJUN_BACKEND_URL")
+BACKEND_INTERVIEW_URL = os.getenv("BACKEND_INTERVIEW_URL")
 GETPROBLEM_BACKEND_URL = os.getenv("GETPROBLEM_BACKEND_URL")
 RECOMMEND_BACKEND_URL = os.getenv("RECOMMEND_BACKEND_URL")
 BACKEND_TIMEOUT = float(os.getenv("BACKEND_TIMEOUT", "30.0"))

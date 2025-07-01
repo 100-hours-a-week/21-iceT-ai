@@ -4,9 +4,9 @@ from typing import AsyncGenerator
 from src.config import settings, BACKEND_INTERVIEW_URL
 from src.core.utils.chat_logger import append_chat_session, append_chat_record
 from src.core.utils.history_utils import build_context_text
-from adapters.v2.llm_interview import call_agent
-from schemas.v2.interview_schema import InterviewStartRequest, InterviewfollowRequest
-from core.v2.chat_prompt_templates import INTERVIEW_START_PROMPT, INTERVIEW_FLOW_DECIDER_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, EVALUATION_AGENT_PROMPT
+from src.adapters.v2.llm_interview import call_agent
+from src.schemas.v2.interview_schema import InterviewStartRequest, InterviewfollowRequest
+from src.core.v2.chat_prompt_templates import INTERVIEW_START_PROMPT, INTERVIEW_FLOW_DECIDER_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, EVALUATION_AGENT_PROMPT
 from src.core.utils.chat_logger import append_chat_record
 import logging
 
