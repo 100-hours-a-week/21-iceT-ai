@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 
 # Gemini LLM 클라이언트 설정
 llm = ChatGoogleGenerativeAI(
-    model=settings.model,
-    temperature=settings.temperature,
-    max_tokens=settings.max_tokens,
+    model=settings.model_solution,
+    temperature=settings.temperature_solution,
+    max_tokens=settings.max_tokens_solution,
     google_api_key=os.getenv("GEMINI_API_KEY")
 )
 
