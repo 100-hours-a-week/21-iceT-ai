@@ -1,6 +1,4 @@
-# 나중에 서버 실행을 위한 메인 함수
-
-import uvicorn, os
+import uvicorn
 from fastapi import FastAPI
 from src.core.logger import setup_logging
 from src.core.exception_handlers import add_exception_handlers

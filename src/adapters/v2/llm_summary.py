@@ -3,7 +3,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from src.config import settings
 from src.core.llm_key_manager import APIKeyManager
-from schemas.v2.summary_schema import SummaryRequest, SummaryResponse
+from src.schemas.v2.summary_schema import SummaryRequest, SummaryResponse
 
 load_dotenv()
 logger = logging.getLogger(__name__)

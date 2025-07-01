@@ -1,8 +1,8 @@
 from datetime import datetime
 from src.config import settings
-from adapters.v2.llm_feedback import call_feedback_llm
-from schemas.v2.feedback_schema import FeedbackRequest, FeedbackfollowRequest
-from core.v2.chat_prompt_templates import FEEDBACK_START_PROMPT, FEEDBACK_ANSWER_PROMPT
+from src.adapters.v2.llm_feedback import call_feedback_llm
+from src.schemas.v2.feedback_schema import FeedbackRequest, FeedbackfollowRequest
+from src.core.v2.chat_prompt_templates import FEEDBACK_START_PROMPT, FEEDBACK_ANSWER_PROMPT
 from src.core.utils.history_utils import build_context_text
 from src.core.utils.chat_logger import append_chat_session, append_chat_record
 
