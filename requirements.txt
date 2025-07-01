@@ -1,26 +1,33 @@
 # python==3.12.7
+python-dotenv==1.1.0
+
 fastapi==0.115.12
 uvicorn==0.34.2
+
 pydantic==2.11.3
 pydantic-settings==2.6.1
-python-dotenv==1.1.0
-pytest-asyncio
-pytest
 
-openai==1.90.0
 langchain==0.3.24
+langchain-openai==0.3.7
+# langchain-ollama==0.3.0
 langchain-community==0.3.23
-langchain-huggingface==0.3.0
-langchain-google-genai==2.1.4
-
-google-cloud-storage>=3.1.0
-google-ai-generativelanguage==0.6.18
-grpcio==1.71.0
-grpcio-status==1.71.0
-protobuf==5.29.4
-
 sentence-transformers==3.4.1
 faiss-cpu==1.10.0
+
+# vllm==0.8.5
+
+# Selenium for web scraping
 selenium==4.31.0
 beautifulsoup4==4.12.3
+
+# Google Cloud Storage client
+google-cloud-storage>=3.1.0
+
+# Gemini용 추가 패키지
+google-ai-generativelanguage==0.6.18
+langchain-google-genai==2.1.4
+grpcio==1.71.0
+grpcio-status==1.71.0
 filetype==1.2.0
+protobuf==5.29.4
+google-genai==1.16.1

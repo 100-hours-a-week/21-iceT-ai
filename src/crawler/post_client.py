@@ -1,5 +1,5 @@
 import requests
-from src.schemas.solution_schema import SolutionResponse
+from src.schemas.v1.solution_schema import SolutionResponse
 from src.config import BACKEND_SOLUTION_URL, BACKEND_TIMEOUT
 import logging
 

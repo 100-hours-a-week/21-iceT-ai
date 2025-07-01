@@ -9,11 +9,7 @@ def get_today_workbook_id(driver) -> int:
     index = 0
 
     try:
-        rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
-        if index >= len(rows):
-            raise RuntimeError(f"{index+1}번째 워크북이 없습니다.")
-        
-        row = rows[index]
+        row = driver.find_element(By.CSS_SELECTOR, "table tbody tr")       
         link = row.find_element(By.CSS_SELECTOR, "td:nth-child(3) a")
         href = link.get_attribute("href")  
         return int(href.split("/")[-1])

@@ -1,5 +1,4 @@
-from langchain_huggingface import HuggingFaceEmbeddings
-
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # RAG에서 사용할 모델
 

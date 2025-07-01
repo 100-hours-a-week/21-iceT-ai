@@ -36,22 +36,19 @@ def download_faiss_from_gcs():
 
 # FAISS 벡터스토어 로딩 (GCS에서 받아온 인덱스 기반)
 def load_vectorstore():
-    embeddings = get_embedder()
+    try:
+        if platform.system() != "Windows":
+            download_faiss_from_gcs()
 
-    # ✅ 운영체제에 따라 분기
-    if platform.system() == "Windows":
-        print("[RAG] Windows 환경 → 로컬 FAISS 인덱스 로딩")
+        embedder = get_embedder()
+        index_dir = "vector/faiss_index" if platform.system() == "Windows" else LOCAL_INDEX_DIR
+
         return FAISS.load_local(
-            "vector/faiss_index",
-            embeddings,
+            index_dir,
+            embeddings=embedder,
             allow_dangerous_deserialization=True
         )
 
-    else:
-        print("[RAG] Linux 환경 → GCP에서 FAISS 인덱스 다운로드")
-        download_faiss_from_gcs()
-        return FAISS.load_local(
-            os.getenv("LOCAL_INDEX_DIR", "vector/faiss_index"),
-            embeddings,
-            allow_dangerous_deserialization=True
-        )
+    except Exception as e:
+        logger.error(f"벡터스토어 로딩 오류: {e}")
+        raise e

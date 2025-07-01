@@ -2,60 +2,53 @@
 # 실행 방법 : python -m pytest -s tests/test_solution_generator.py
 
 import pytest
-from src.schemas.solution_schema import SolutionRequest
-from src.crawler.solution_generater import generate_explanation
+from src.schemas.v1.solution_schema import SolutionRequest
+from src.crawler.v1.solution_generater import generate_explanation
+from src.crawler.v1.post_client import post_to_backend
 
 @pytest.mark.asyncio
-async def test_explain_solution():
-    # 테스트용 문제 정의
-    test_problem = {
-    "problem_number": 9999,
-    "title": "메시지 다국어",
-    "description": (
-        "아이들이 원형으로 앉아 서로 종이를 넘기며 메시지를 작성합니다. "
-        "좋은 메시지는 'P', 나쁜 메시지는 'N'으로 표기되고, 누가 누구에게 나쁜 말을 했는지 찾아야 합니다."
-    ),
-    "input": (
-        "여러 그룹의 입력이 주어지며, 각 그룹은 첫 줄에 n (5 ≤ n ≤ 20), 다음 n줄은 n장의 종이 내용을 나타냅니다.\n"
-        "각 줄은 이름과 함께 'P' 또는 'N'이 n-1개 주어지며, 마지막에 '0'이 입력되면 종료됩니다."
-    ),
-    "output": (
-        "각 그룹마다 나쁜 말을 한 사람과 당한 사람을 출력합니다.\n"
-        "형식은 'A was nasty about B'이며, 아무도 나쁜 말을 하지 않으면 'Nobody was nasty'를 출력합니다.\n"
-        "각 그룹은 빈 줄로 구분됩니다."
-    ),
-    "input_example": (
-        "5\n"
-        "Ann P N P P\n"
-        "Bob P P P P\n"
-        "Clive P P P P\n"
-        "Debby P N P P\n"
-        "Eunice P P P P\n"
-        "6\n"
-        "Zheng P P P P P\n"
-        "Yeng P P P P P\n"
-        "Xiao P P P P P\n"
-        "Will P P P P P\n"
-        "Veronica P P P P P\n"
-        "Utah P P P P P\n"
-        "0"
-    ),
-    "output_example": (
-        "Group 1\n"
-        "Debby was nasty about Ann\n"
-        "Bob was nasty about Debby\n"
-        "\n"
-        "Group 2\n"
-        "Nobody was nasty"
-    )
-}
+async def test_explain_solutions():
+    # 처리할 문제들을 dict 형태로 리스트에 나열
+    raw_problems = [
+        {
+            "problem_number": 1109,
+            "title": "섬",
+            "description": (
+                "지도가 주어졌을 때, 섬의 높이를 계산하는 문제이다. "
+                "섬은 'x'가 가로, 세로, 대각선으로 연결된 그룹으로 정의되며, "
+                "섬 A가 다른 섬 B를 포함하면 B를 포함하는 A의 높이는 B의 높이 + 1이다. "
+                "지도에서 각 높이에 해당하는 섬의 개수를 출력한다."
+            ),
+            "input": (
+                "첫째 줄에 N과 M이 주어진다. "
+                "둘째 줄부터 N개의 줄에 지도가 주어진다. "
+                "지도는 'x' 또는 '.'으로 이루어져 있고, N과 M은 50 이하의 자연수이다."
+            ),
+            "output": (
+                "높이가 0인 섬의 개수부터 최대 높이에 해당하는 섬의 개수까지 공백으로 구분하여 출력한다. "
+                "섬이 하나도 없으면 -1을 출력한다."
+            ),
+            "input_example": (
+                "5 5\n"
+                "xxxxx\n"
+                "x...x\n"
+                "x.x.x\n"
+                "x...x\n"
+                "xxxxx\n"
+            ),
+            "output_example": (
+                "1 1\n"
+            )
+        },
+    ]
 
+    for prob in raw_problems:
+        request = SolutionRequest(**prob)
+        response = await generate_explanation(request)
+        success = post_to_backend(request.problem_number, response)
+        assert success, f"백엔드 전송에 실패했습니다: {request.problem_number}"
 
-    request = SolutionRequest(**test_problem)
-    response = await generate_explanation(request)
-    # response = await explain_solution(request)
-
-    print("문제 개요:\n", response.problemCheck.problem_description)
-    print("사용 알고리즘:\n", response.problemCheck.algorithm)
-    print("풀이 단계:\n", response.problemSolving)
-    print("정답 코드 (Python):\n", response.solutionCode.python)
+        print("문제 개요:\n", response.problem_check.problem_description)
+        print("사용 알고리즘:\n", response.problem_check.algorithm)
+        print("풀이 단계:\n", response.problem_solving)
+        print("정답 코드 (Python):\n", response.solution_code.python)

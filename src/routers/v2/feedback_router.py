@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from src.schemas.feedback_schema import FeedbackRequest, FeedbackfollowRequest
-from src.services.feedback_service import handle_feedback_start, handle_feedback_answer
+from schemas.v2.feedback_schema import FeedbackRequest, FeedbackfollowRequest
+from services.v2.feedback_service import handle_feedback_start, handle_feedback_answer
 
 router = APIRouter()
 

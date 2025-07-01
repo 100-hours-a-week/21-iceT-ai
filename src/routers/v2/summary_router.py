@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter
-from src.schemas.summary_schema import SummaryRequest, SummaryResponse
-from src.services.summary_service import summarize_chat
+from schemas.v2.summary_schema import SummaryRequest, SummaryResponse
+from services.v2.summary_service import summarize_chat
 
 router = APIRouter()
 
