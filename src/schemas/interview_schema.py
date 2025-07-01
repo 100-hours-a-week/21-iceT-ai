@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class Message(BaseModel):
     role: str = Field(description='"user" 또는 "assistant" 역할')
@@ -20,4 +20,4 @@ class InterviewStartRequest(BaseModel):
 class InterviewfollowRequest(BaseModel):
     sessionId: str
     messages: List[Message]
-    summary: str  # JSON string. 문제+대화 요약 모두 포함 ("type": "problem" / "chat")
+    summary: Optional[str] = None

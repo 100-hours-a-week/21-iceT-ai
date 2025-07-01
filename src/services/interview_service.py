@@ -30,7 +30,7 @@ async def handle_interview_start(req: InterviewStartRequest):
     append_chat_session(req.sessionId, req.problemNumber, req.title, datetime.now().isoformat())
     append_chat_record(req.sessionId, "user", req.code)
 
-    problem_text = f"{req.title}\n{req.description}\n입력: {req.inputRule}\n출력: {req.outputRule}\n예시: {req.inputExample} → {req.outputExample}"
+    problem_text = f"{req.title}\n{req.description}\n입력: {req.inputDescription}\n출력: {req.outputDescription}\n예시: {req.inputExample} → {req.outputExample}"
     prompt = INTERVIEW_START_PROMPT.format(problem=problem_text, language=req.codeLanguage)
     return await call_agent(
         prompt,

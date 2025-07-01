@@ -9,12 +9,7 @@ from src.core.utils.stream_utils import wrap_stream_response
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS"))
-
-client = OpenAI(
-    api_key=solar_key_manager.next_key(),
-    base_url="https://api.upstage.ai/v1"
-)
+solar_key_manager = APIKeyManager(os.getenv("SOLAR_API_KEYS").split(","))
 
 async def call_agent(prompt: str, stream: bool = True, max_tokens: int = None, session_id: str = None):
     max_tokens = max_tokens or settings.max_tokens_chat  # fallback

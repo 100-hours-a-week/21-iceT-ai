@@ -14,10 +14,6 @@ with gr.Blocks() as demo:
         value="feedback",
         label="💡 모드 선택"
     )
-    mode = gr.State("feedback")
-
-    # 사용자가 선택한 값을 상태값 mode에 저장
-    mode_selector.change(fn=lambda m: m, inputs=mode_selector, outputs=mode)
 
     # 문제 정보 입력
     with gr.Row():
@@ -43,7 +39,7 @@ with gr.Blocks() as demo:
     chat_display = gr.Markdown(label="🧾 대화 히스토리")
 
     async def start_chat(
-        title, description, input_desc, output_desc, input_ex, output_ex, language, code, mode
+        title, description, input_desc, output_desc, input_ex, output_ex, language, code, mode_value
     ):
         output = ""
         session_id = str(uuid.uuid4())
@@ -63,7 +59,7 @@ with gr.Blocks() as demo:
 
         url = (
         "http://localhost:8000/api/ai/v2/feedback/start"
-        if mode == "feedback"
+        if mode_value == "feedback"
         else "http://localhost:8000/api/ai/v2/interview/start"
     )
         
@@ -73,20 +69,22 @@ with gr.Blocks() as demo:
                     if line.startswith("data: "):
                         content = line.replace("data: ", "")
                         output += content
-                        yield output  # 스트리밍 동안 마크다운 박스에 실시간 출력
+                        yield gr.update(value=output), gr.update(), gr.update()
 
-        return output, [
+        # 🟢 스트리밍 종료 후 최종 3개 값 완성해서 한번 더 반환
+        final_history = [
             {"role": "user", "content": code},
             {"role": "assistant", "content": output}
-        ], session_id
+        ]
+        yield gr.update(value=output), final_history, session_id
 
     start_btn.click(
         start_chat,
-        inputs=[title, description, input_desc, output_desc, input_ex, output_ex, language, code, mode],
+        inputs=[title, description, input_desc, output_desc, input_ex, output_ex, language, code, mode_selector],
         outputs=[output_box, chat_history, session_id]
     )
 
-    async def answer_chat(user_msg, history, session_id, mode):
+    async def answer_chat(user_msg, history, session_id, mode_value):
         if not session_id:
             yield "먼저 Start를 눌러 세션을 시작하세요.", history, session_id
             return
@@ -102,7 +100,7 @@ with gr.Blocks() as demo:
 
         url = (
             "http://localhost:8000/api/ai/v2/feedback/answer"
-            if mode == "feedback"
+            if mode_value == "feedback"
             else "http://localhost:8000/api/ai/v2/interview/answer"
         )
 
@@ -117,7 +115,7 @@ with gr.Blocks() as demo:
 
     followup_btn.click(
         answer_chat,
-        inputs=[followup_input, chat_history, session_id, mode],
+        inputs=[followup_input, chat_history, session_id, mode_selector],
         outputs=[followup_output, chat_history, session_id]
     )
 

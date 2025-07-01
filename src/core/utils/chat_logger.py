@@ -2,7 +2,7 @@ import csv
 import os
 from datetime import datetime
 
-BASE_PATH = "DB"  # 저장 경로
+BASE_PATH = "tests/DB"  # 저장 경로
 
 def get_next_turn(session_id: str, file: str) -> int:
     """해당 세션의 다음 턴 번호 계산 (2개 메시지마다 1턴)"""

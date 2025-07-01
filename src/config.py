@@ -21,8 +21,8 @@ class Settings(BaseSettings):
 
     max_summary_sentences_problem: int = 4
     max_summary_sentences_chat: int = 10
-    max_recent_messages: int = 8
-    max_summary_messages: int = 30
+    max_recent_messages: int = 10
+    max_summary_messages: int = 10
 
     model_config = {"protected_namespaces": ("settings_",)}
 

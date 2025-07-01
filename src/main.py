@@ -6,7 +6,7 @@ from src.routers.v1.solution_router import router as solution_router
 from src.routers.v2 import summary_router, feedback_router, interview_router
 
 def clear_csv_logs():
-    base_path = "DB"
+    base_path = "tests/DB"
     files_to_clear = {
         "chat_record.csv": ["sessionId", "turn", "role", "content", "createdAt"],
         "chat_session.csv": ["sessionId", "problemNumber", "title", "createdAt"],
