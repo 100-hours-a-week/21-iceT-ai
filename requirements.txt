@@ -13,7 +13,7 @@ langchain-openai==0.3.7
 langchain-community==0.3.23
 sentence-transformers==3.4.1
 faiss-cpu==1.10.0
-
+langchain-huggingface==0.0.6
 # vllm==0.8.5
 
 # Selenium for web scraping
