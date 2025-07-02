@@ -3,7 +3,8 @@ name: Build and Deploy to ECR
 on:
   push:
     branches: [ "feat/2-chatbot" ]
-
+  workflow_dispatch: 
+  
 jobs:
   build-and-push-ecr:
     name: Build and Push Docker image to ECR
@@ -40,7 +41,7 @@ jobs:
 
   deploy-to-ec2:
     name: Deploy to EC2
-    needs: build-and-push-ecr
+    needs: build-and-push-ecr 
     runs-on: ubuntu-latest
 
     steps:
@@ -54,15 +55,39 @@ jobs:
     - name: SSH and Deploy
       run: |
         ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          # AWS CLI 설치 (Ubuntu 기준)
+          if ! command -v aws &> /dev/null; then
+            sudo apt update && sudo apt install -y awscli
+          fi
+          
+          # AWS credentials 설정
+          export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
+          export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          export AWS_REGION="${{ secrets.AWS_REGION }}"
+      
+          # ECR 로그인
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
 
+          # 8000 포트 사용 중인 컨테이너가 있으면 정리
+          CONTAINER_ID=$(docker ps -q --filter "publish=8000")
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Stopping container using port 8000: $CONTAINER_ID"
+            docker stop $CONTAINER_ID || true
+            docker rm $CONTAINER_ID || true
+          fi
+          
+          # 기존 컨테이너 종료 및 삭제
           docker stop chatbot-api || true
           docker rm chatbot-api || true
 
+          docker stop ai || true
+          docker rm ai || true
+
+          # 최신 이미지 pull
           docker pull ${{ secrets.ECR_REPOSITORY }}:latest
 
+          # 컨테이너 실행
           docker run -d -p 8000:8000 --name chatbot-api \
-            -e GOOGLE_APPLICATION_CREDENTIALS=/app/gcp_key.json \
             ${{ secrets.ECR_REPOSITORY }}:latest
         EOF
