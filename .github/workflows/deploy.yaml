@@ -1,8 +1,8 @@
 name: Build and Deploy to ECR
 
 on:
-  push:
-    branches: [ "feat/2-chatbot" ]
+  #push:
+  #  branches: [ "feat/2-chatbot" ]
   workflow_dispatch: 
   
 jobs:
