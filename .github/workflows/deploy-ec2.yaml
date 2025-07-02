@@ -6,7 +6,6 @@ on:
 jobs:
   deploy-to-ec2:
       name: Deploy to EC2
-      needs: build-and-push-ecr
       runs-on: ubuntu-latest
   
       steps:
