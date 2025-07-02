@@ -54,15 +54,26 @@ jobs:
     - name: SSH and Deploy
       run: |
         ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-          docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
+          # AWS CLI 설치 (Ubuntu 기준)
+          if ! command -v aws &> /dev/null; then
+            sudo apt update && sudo apt install -y awscli
+          fi
 
+          # ECR 로그인
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
+
+          # 기존 컨테이너 종료 및 삭제
           docker stop chatbot-api || true
           docker rm chatbot-api || true
 
+          # 최신 이미지 pull
           docker pull ${{ secrets.ECR_REPOSITORY }}:latest
 
+          # 컨테이너 실행
           docker run -d -p 8000:8000 --name chatbot-api \
+            -v \$HOME/app/gcp_key.json:/app/gcp_key.json \
             -e GOOGLE_APPLICATION_CREDENTIALS=/app/gcp_key.json \
             ${{ secrets.ECR_REPOSITORY }}:latest
         EOF
+
