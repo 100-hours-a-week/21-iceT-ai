@@ -12,9 +12,9 @@ class Summary(BaseModel):
     content: str = Field(description="요약된 발화 내용")
 
 class SummaryRequest(BaseModel):
-    sessionId: str = Field(description="세션 ID")
+    sessionId: int = Field(description="세션 ID")
     messages: List[Message] = Field(description="요약할 메시지 목록 (user/assistant role 포함)")
 
 class SummaryResponse(BaseModel):
-    sessionId: str = Field(description="세션 ID")
+    sessionId: int = Field(description="세션 ID")
     summary: str = Field(description="문제 정보와 대화 요약을 담은 긴 텍스트")

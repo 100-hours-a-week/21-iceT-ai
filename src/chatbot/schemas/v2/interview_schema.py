@@ -6,7 +6,7 @@ class Message(BaseModel):
     content: str = Field(description="메시지 내용")
 
 class InterviewStartRequest(BaseModel):
-    sessionId: str
+    sessionId: int
     problemNumber: int
     title: str
     description: str

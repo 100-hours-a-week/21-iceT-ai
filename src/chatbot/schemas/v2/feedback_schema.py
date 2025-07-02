@@ -6,7 +6,7 @@ class Message(BaseModel):
     content: str = Field(description="메시지 내용")
 
 class FeedbackRequest(BaseModel):
-    sessionId: str = Field(description="세션 ID")
+    sessionId: int = Field(description="세션 ID")
     problemNumber: int = Field(description="문제 번호")
     title: str = Field(description="문제 제목")
     description: str = Field(description="문제 설명")
