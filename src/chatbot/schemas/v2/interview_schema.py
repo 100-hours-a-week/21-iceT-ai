@@ -18,6 +18,6 @@ class InterviewStartRequest(BaseModel):
     code: str
 
 class InterviewfollowRequest(BaseModel):
-    sessionId: str
+    sessionId: int
     messages: List[Message]
     summary: Optional[str] = None

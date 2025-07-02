@@ -18,6 +18,6 @@ class FeedbackRequest(BaseModel):
     code: str = Field(description="사용자 제출 코드")
 
 class FeedbackfollowRequest(BaseModel):
-    sessionId: str = Field(description="챗 세션 ID")
+    sessionId: int = Field(description="챗 세션 ID")
     messages: List[Message] = Field(description="대화 메시지 리스트")
     summary: Optional[str] = Field(default=None, description="이전 요약 (선택사항)")
