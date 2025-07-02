@@ -1,59 +1,59 @@
-name: Deploy Only to EC2
+# name: Deploy Only to EC2
 
-on:
-  #push:
-  #  branches: [ "feat/2-chatbot" ]
-  workflow_dispatch:  # 수동 실행
+# on:
+#   #push:
+#   #  branches: [ "feat/2-chatbot" ]
+#   workflow_dispatch:  # 수동 실행
 
-jobs:
-  deploy-to-ec2:
-      name: Deploy to EC2
-      runs-on: ubuntu-latest
+# jobs:
+#   deploy-to-ec2:
+#       name: Deploy to EC2
+#       runs-on: ubuntu-latest
   
-      steps:
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+#       steps:
+#       - name: Add SSH key
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
   
-      - name: SSH and Deploy
-        run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # AWS CLI 설치 (Ubuntu 기준)
-            if ! command -v aws &> /dev/null; then
-              sudo apt update && sudo apt install -y awscli
-            fi
+#       - name: SSH and Deploy
+#         run: |
+#           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+#             # AWS CLI 설치 (Ubuntu 기준)
+#             if ! command -v aws &> /dev/null; then
+#               sudo apt update && sudo apt install -y awscli
+#             fi
             
-            # AWS credentials 설정
-            export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
-            export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-            export AWS_REGION="${{ secrets.AWS_REGION }}"
+#             # AWS credentials 설정
+#             export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
+#             export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+#             export AWS_REGION="${{ secrets.AWS_REGION }}"
         
-            # ECR 로그인
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-            docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
+#             # ECR 로그인
+#             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+#             docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
 
-            # 8000 포트 사용 중인 컨테이너가 있으면 정리
-            CONTAINER_ID=$(docker ps -q --filter "publish=8000")
-            if [ -n "$CONTAINER_ID" ]; then
-              echo "Stopping container using port 8000: $CONTAINER_ID"
-              docker stop $CONTAINER_ID || true
-              docker rm $CONTAINER_ID || true
-            fi
+#             # 8000 포트 사용 중인 컨테이너가 있으면 정리
+#             CONTAINER_ID=$(docker ps -q --filter "publish=8000")
+#             if [ -n "$CONTAINER_ID" ]; then
+#               echo "Stopping container using port 8000: $CONTAINER_ID"
+#               docker stop $CONTAINER_ID || true
+#               docker rm $CONTAINER_ID || true
+#             fi
             
-            # 기존 컨테이너 종료 및 삭제
-            docker stop chatbot-api || true
-            docker rm chatbot-api || true
+#             # 기존 컨테이너 종료 및 삭제
+#             docker stop chatbot-api || true
+#             docker rm chatbot-api || true
   
-            docker stop ai || true
-            docker rm ai || true
+#             docker stop ai || true
+#             docker rm ai || true
   
-            # 최신 이미지 pull
-            docker pull ${{ secrets.ECR_REPOSITORY }}:latest
+#             # 최신 이미지 pull
+#             docker pull ${{ secrets.ECR_REPOSITORY }}:latest
   
-            # 컨테이너 실행
-            docker run -d -p 8000:8000 --name chatbot-api \
-              ${{ secrets.ECR_REPOSITORY }}:latest
-          EOF
+#             # 컨테이너 실행
+#             docker run -d -p 8000:8000 --name chatbot-api \
+#               ${{ secrets.ECR_REPOSITORY }}:latest
+#           EOF
