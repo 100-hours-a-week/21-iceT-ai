@@ -8,9 +8,9 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.retrievers import BM25Retriever, EnsembleRetriever
 from langchain.retrievers import MaximalMarginalRelevanceRetriever, RerankRetriever
 from sentence_transformers import CrossEncoder
-from src.core.embedding_model import get_embedder
-from src.recommend.problem_loader import fetch_all_problems
-from src.config import GETPROBLEM_BACKEND_URL, RECOMMEND_BACKEND_URL, BACKEND_TIMEOUT
+from src.solchat.core.embedding_model import get_embedder
+from src.recommend.recommend.problem_loader import fetch_all_problems
+from src.solchat.config import GETPROBLEM_BACKEND_URL, RECOMMEND_BACKEND_URL, BACKEND_TIMEOUT
 
 # 모든 문제 데이터와 매핑 한 번만 로드
 _all_probs = list(fetch_all_problems())

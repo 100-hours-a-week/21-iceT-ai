@@ -7,7 +7,7 @@ import logging
 from src.crawler.daily_crawler import get_today_workbook_id, get_problem_ids_from_workbook
 from src.crawler.v2.boj_crawler_v2 import login_with_cookies, create_driver, crawl_boj_problem_with_selenium
 from src.crawler.v2.pipeline_v2 import crawl_generate_post
-from src.core.logger import setup_logging
+from src.solchat.core.logger import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
