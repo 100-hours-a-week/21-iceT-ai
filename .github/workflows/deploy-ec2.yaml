@@ -1,8 +1,8 @@
 name: Deploy Only to EC2
 
 on:
-  push:
-    branches: [ "feat/2-chatbot" ]
+  #push:
+  #  branches: [ "feat/2-chatbot" ]
   workflow_dispatch:  # 수동 실행
 
 jobs:
