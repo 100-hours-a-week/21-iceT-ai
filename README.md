@@ -38,7 +38,6 @@ python -m src.main
 │   │       └── llm_summary.py
 │   ├── core/
 │   │   ├── utils/
-│   │   │   ├── chat_logger.py
 │   │   │   ├── history_utils.py
 │   │   │   └── stream_utils.py
 │   │   ├── v1/
@@ -105,13 +104,9 @@ python -m src.main
 │   ├── recommend_daily_pipeline.py
 │   └── run_daily_pipeline.py
 ├── tests/
-│   ├── DB/
-│   │   ├── chat_record.csv
-│   │   ├── chat_session.csv
-│   │   └── chat_summary.csv
 │   ├── test_solution_generator.py
 │   ├── test_solution_generator_v2.py
-│   └── test_ui.py
+│   └── test_gradio.py
 ├── vector/
 │   └── faiss_index/
 │       ├── index.faiss
