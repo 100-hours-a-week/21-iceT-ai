@@ -34,7 +34,15 @@ jobs:
             # ECR 로그인
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
             docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)
-  
+
+            # 4. 8000 포트 사용 중인 컨테이너가 있으면 정리
+            CONTAINER_ID=\$(docker ps -q --filter "publish=8000")
+            if [ -n "\$CONTAINER_ID" ]; then
+              echo "Port 8000 is in use. Stopping container: \$CONTAINER_ID"
+              docker stop \$CONTAINER_ID || true
+              docker rm \$CONTAINER_ID || true
+            fi
+            
             # 기존 컨테이너 종료 및 삭제
             docker stop chatbot-api || true
             docker rm chatbot-api || true
