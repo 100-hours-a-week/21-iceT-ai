@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
-from schemas.v2.solution_schema_v2 import SolutionRequest, SolutionResponse
-from services.v2.solution_service_v2 import explain_solution
+from src.schemas.v2.solution_schema_v2 import SolutionRequest, SolutionResponse
+from src.services.v2.solution_service_v2 import explain_solution
 from src.config import SERVICE_API_KEY
 
 router = APIRouter()

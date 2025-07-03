@@ -1,6 +1,5 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 
-
 # RAG에서 사용할 모델
 
 def get_embedder():

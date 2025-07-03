@@ -2,8 +2,8 @@ import logging
 import asyncio
 from typing import List
 from src.config import settings
-from adapters.v2.llm_summary import generate_summary
-from schemas.v2.summary_schema import SummaryRequest, SummaryResponse
+from src.adapters.v2.llm_summary import generate_summary
+from src.schemas.v2.summary_schema import SummaryRequest, SummaryResponse
 from src.core.utils.chat_logger import append_chat_summary
 
 logger = logging.getLogger(__name__)
