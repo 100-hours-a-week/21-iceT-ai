@@ -1,4 +1,4 @@
-# Nth Fibonacci Number
+# 피보나치 수 / Nth Fibonacci Number
 
 ## 📌 Definition
 The **nth Fibonacci number** is the term at position n in the Fibonacci sequence defined by:

@@ -1,4 +1,4 @@
-# Breadth-First Search (BFS) for a Graph
+# 너비 우선 탐색 / Breadth-First Search (BFS) for a Graph
 
 ## 📌 Definition
 

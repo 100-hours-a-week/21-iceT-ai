@@ -1,4 +1,4 @@
-# Segment Trees
+# 세그먼트 트리 / Segment Trees
 
 ## 📌 Definition
 

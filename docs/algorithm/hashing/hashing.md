@@ -1,4 +1,4 @@
-# Hashing
+# 해시 맵 / Hashing
 
 ## 📌 Definition
 

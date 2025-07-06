@@ -1,4 +1,4 @@
-# Prefix Sum Array - Implementation and Applications
+# 누적 합 / Prefix Sum Array - Implementation and Applications
 
 ## 📌 Definition
 

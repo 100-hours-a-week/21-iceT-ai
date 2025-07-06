@@ -1,4 +1,4 @@
-# Divide and Conquer Algorithm
+# 분할정복 / Divide and Conquer Algorithm
 
 ## 📌 Definition
 

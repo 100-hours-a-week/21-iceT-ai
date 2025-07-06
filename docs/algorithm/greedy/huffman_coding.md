@@ -1,4 +1,4 @@
-# Huffman Coding
+# 허프만 코딩 / Huffman Coding
 
 ## 📌 Definition
 

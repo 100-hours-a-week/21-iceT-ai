@@ -1,4 +1,4 @@
-# Branch and Bound Algorithm
+# 분기한정 / Branch and Bound Algorithm
 
 ## 📌 Definition
 

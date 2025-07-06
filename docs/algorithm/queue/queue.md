@@ -1,4 +1,4 @@
-# Queue Data Structure
+# 큐 / Queue Data Structure
 
 ## 📌 Definition
 

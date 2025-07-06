@@ -1,4 +1,4 @@
-# Introduction to Red-Black Tree
+# 레드-블랙 트리 / Introduction to Red-Black Tree
 
 ## 📌 Definition
 A **Red-Black Tree** is a self-balancing binary search tree in which each node carries an extra bit — its **color** (red or black) — and the tree enforces a set of properties that guarantee the path from root to leaves is always _O(log n)_ long. This ensures that search, insertion, and deletion all run in logarithmic time even in the worst case.

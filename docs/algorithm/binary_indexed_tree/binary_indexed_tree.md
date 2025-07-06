@@ -1,4 +1,4 @@
-# Fenwick Tree (Binary Indexed Tree)
+# 펜윅 트리 / Fenwick Tree (Binary Indexed Tree)
 
 A **Fenwick Tree**, also known as a **Binary Indexed Tree (BIT)**, is a powerful data structure that supports efficient **prefix sum queries** and **point or range updates** in logarithmic time. It is widely used in **competitive programming** due to its ease of implementation and performance.
 
