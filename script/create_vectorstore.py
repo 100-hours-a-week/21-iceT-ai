@@ -1,4 +1,4 @@
-# 서버 실행 전 1회 실행 필요
+# 실행 필요 없음. 도커파일에서 제외
 
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import MarkdownHeaderTextSplitter
@@ -15,7 +15,7 @@ load_dotenv()
 
 # 1. Markdown 문서 로드 (docs/ 폴더 내 .md 파일 대상)
 loader = DirectoryLoader(
-    path="docs",
+    path="docs/algorithm",
     glob="**/*.md",
     loader_cls=TextLoader,
     use_multithreading=True,
@@ -40,7 +40,14 @@ for doc in docs:
 
 # 3. 벡터스토어 생성
 embedder = get_embedder()
-vectorstore = FAISS.from_documents(chunks, embedding=embedder)
+docs_with_prefix = [
+    chunk.__class__(
+        page_content="passage: " + chunk.page_content,
+        metadata=chunk.metadata,
+    )
+    for chunk in chunks
+]
+vectorstore = FAISS.from_documents(docs_with_prefix, embedding=embedder)
 
 # 4. 로컬 저장
 INDEX_SAVE_PATH = os.getenv("VECTOR_STORE_PATH")

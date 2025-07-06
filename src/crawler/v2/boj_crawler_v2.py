@@ -98,6 +98,8 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
         output_desc = safe_select("#problem_output")
         ex_inputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-input-"]')]
         ex_outputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-output-"]')]
+        algo_tags = [tag.text.strip() for tag in soup.select("#problem_tags a.spoiler-link")]
+    
 
         return {
             "problem_number": problem_id,
@@ -106,7 +108,8 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
             "input": input_desc,
             "output": output_desc,
             "input_example": ex_inputs,
-            "output_example": ex_outputs
+            "output_example": ex_outputs,
+            "algorithm": algo_tags
         }
 
     except Exception as e:
@@ -118,7 +121,8 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
             "input": "",
             "output": "",
             "input_example": "",
-            "output_example": ""
+            "output_example": "",
+            "algorithm": ""
         }
     
 
@@ -183,6 +187,7 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
 #         output_desc = safe_select("#problem_output")
 #         ex_inputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-input-"]')]
 #         ex_outputs = [pre.text.strip() for pre in soup.select('pre[id^="sample-output-"]')]
+#         algo_tags = [tag.text.strip() for tag in soup.select("#problem_tags a.spoiler-link")]
 
 #         return {
 #             "problem_number": problem_id,
@@ -191,7 +196,8 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
 #             "input": input_desc,
 #             "output": output_desc,
 #             "input_example": ex_inputs,
-#             "output_example": ex_outputs
+#             "output_example": ex_outputs,
+#             "algorithm": algo_tags
 #         }
 
 #     except Exception as e:
@@ -203,5 +209,6 @@ def crawl_boj_problem_with_selenium(driver, problem_id):
 #             "input": "",
 #             "output": "",
 #             "input_example": "",
-#             "output_example": ""
+#             "output_example": "",
+#             "algorithm": ""
 #         }

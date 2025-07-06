@@ -11,6 +11,7 @@ class SolutionRequest(BaseModel):
     output: str          = Field(description="출력 설명")
     input_example: str   = Field(description="입력 예시")
     output_example: str  = Field(description="출력 예시")
+    algorithm: list[str] = Field(description="알고리즘 분류")
 
 # response 중 문제 개요 및 알고리즘 설명
 class ProblemCheck(BaseModel):
