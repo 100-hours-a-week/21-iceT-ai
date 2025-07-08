@@ -1,6 +1,6 @@
 import logging, anyio
 from src.core.prompt_templates import SOLUTION_PROMPT
-from adapters.llm_client import generate_solution
+from src.adapters.llm_client import generate_solution
 from src.schemas.solution_schema import SolutionRequest, SolutionResponse
 from src.core.vector_store import load_vectorstore
 
