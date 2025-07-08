@@ -1,7 +1,7 @@
 # 백앤드 POST 요청 전송
 
 import requests
-from src.schemas.v2.solution_schema_v2 import SolutionResponse
+from src.schemas.solution_schema_v2 import SolutionResponse
 from src.config import BACKEND_SOLUTION_URL, BACKEND_TIMEOUT, SERVICE_API_KEY
 import logging
 

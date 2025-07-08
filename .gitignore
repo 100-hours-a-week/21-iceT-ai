@@ -16,7 +16,6 @@ venv/
 .DS_Store
 .pytest_cache/
 logs/
-test_inference.py
 
 # 비밀 키
 secret/
