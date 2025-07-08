@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from google import genai
 from google.genai import types
+from langsmith import traceable
 
 from src.config import settings
 from src.core.llm_key_manager import APIKeyManager
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 # --- Google Gemini (Solution) ---
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+@traceable(run_type="llm")
 def generate_solution(prompt_text: str) -> SolutionResponse:
     """Gemini 기반 해설 생성"""
     try:
@@ -46,6 +48,7 @@ def get_solar_client():
         base_url="https://api.upstage.ai/v1"
     )
 
+@traceable(run_type="llm", name="interview-mode", tags=["interview", "upstage"])
 async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: int = None, session_id: str = None):
     """인터뷰용 LLM 호출 (SSE 지원)"""
     max_tokens = max_tokens or settings.max_tokens_chat
@@ -59,13 +62,14 @@ async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: int
             stream=stream
         )
         if stream:
-            return wrap_stream_response(response, session_id=session_id)
+            return wrap_stream_response(response, session_id=session_id, prompt=prompt)
         else:
             return response.choices[0].message.content
     except Exception as e:
         logger.error("Interview Agent 호출 실패", exc_info=True)
         raise RuntimeError("인터뷰 에이전트 응답 생성 실패") from e
 
+@traceable(run_type="llm", name="feedback-mode", tags=["feedback", "upstage"])
 async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: int = None, session_id: str = None):
     """피드백용 LLM 호출 (SSE 지원)"""
     max_tokens = max_tokens or settings.max_tokens_chat
@@ -79,7 +83,7 @@ async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: int 
             stream=stream
         )
         if stream:
-            return wrap_stream_response(response, session_id=session_id)
+            return wrap_stream_response(response, session_id=session_id, prompt=prompt)
         else:
             return response.choices[0].message.content
     except Exception as e:

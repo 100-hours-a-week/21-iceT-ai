@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 
 # 인터뷰 서비스
 
-async def notify_interview_end(session_id: int):
+async def notify_interview_end(session_id: int, finished: bool):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 BACKEND_INTERVIEW_URL,
-                json={"sessionId": session_id, "isFinished": True},
+                json={"sessionId": session_id, "finished": finished},
             )
             if response.status_code != 200:
                 logger.warning(f"[notify_interview_end] 상태코드 {response.status_code}: {response.text}")
@@ -51,6 +51,17 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
     context_text = build_context_text(messages, summary=getattr(req, "summary", None))
 
+    assistant_questions = [m for m in messages if m["role"] == "assistant"]
+    if len(assistant_questions) >= 5:
+        evaluation_stream = await call_interview_agent(
+            EVALUATION_AGENT_PROMPT.format(context=context_text),
+            stream=True,
+            max_tokens=settings.max_tokens_interview_answer,
+            session_id=req.sessionId,
+        )
+        asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
+        return evaluation_stream
+
     # 대화 흐름 판단 (followup / question / end)
     flow_decision = await call_interview_agent(
         INTERVIEW_FLOW_DECIDER_PROMPT.format(context=context_text),
@@ -64,11 +75,14 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
         evaluation_stream = await call_interview_agent(
             EVALUATION_AGENT_PROMPT.format(context=context_text),
             stream=True,
-            max_tokens=settings.max_tokens_interview_end,
+            max_tokens=settings.max_tokens_interview_answer,
             session_id=req.sessionId,
         )
-        asyncio.create_task(notify_interview_end(req.sessionId))
+        asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
         return evaluation_stream
+
+    # 종료가 아닐 때도 상태 전달
+    asyncio.create_task(notify_interview_end(req.sessionId, finished=False))
 
     # followup or question → 스트리밍 질문 생성
     if decision == "followup":
@@ -81,7 +95,7 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
                 user_response=user_response
             ),
             stream=True,
-            max_tokens=settings.max_tokens_interview_start,
+            max_tokens=settings.max_tokens_interview_answer,
             session_id=req.sessionId,
         )
         return followup_stream
@@ -95,7 +109,7 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
                 avoid_list=avoid_list
             ),
             stream=True,
-            max_tokens=settings.max_tokens_interview_start,
+            max_tokens=settings.max_tokens_interview_answer,
             session_id=req.sessionId,
         )
         return question_stream
