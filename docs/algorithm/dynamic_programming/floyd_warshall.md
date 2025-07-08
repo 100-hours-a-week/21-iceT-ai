@@ -1,4 +1,4 @@
-# Floyd–Warshall Algorithm
+# 플로이드-워셜 / Floyd–Warshall Algorithm
 
 ## 📌 Definition  
 The **Floyd–Warshall Algorithm** finds the **shortest distances between all pairs of vertices** in a weighted graph.  

@@ -1,4 +1,4 @@
-# Greedy Algorithms
+# 그리디 알고리즘 / Greedy Algorithms
 
 ## 📌 Definition
 

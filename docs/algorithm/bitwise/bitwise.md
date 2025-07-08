@@ -1,4 +1,4 @@
-# Bitwise Algorithms
+# 비트마스크 / Bitwise Algorithms
 
 ## 📌 Definition
 

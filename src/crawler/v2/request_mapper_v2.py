@@ -9,6 +9,7 @@ def to_solution_request(problem_data: dict, language="python") -> SolutionReques
         description=problem_data["description"],
         input=problem_data["input"],
         output=problem_data["output"],
-        input_example=problem_data["input_example"][0],  
-        output_example=problem_data["output_example"][0],  
+        input_example=problem_data["input_example"][0],
+        output_example=problem_data["output_example"][0],
+        algorithm=problem_data["algorithm"]
     )

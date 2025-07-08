@@ -1,4 +1,4 @@
-# Recursive Algorithms
+# 재귀 / Recursive Algorithms
 
 ## 📌 Definition
 

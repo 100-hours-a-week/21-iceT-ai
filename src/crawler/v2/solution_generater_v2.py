@@ -1,6 +1,7 @@
 # GPT 해설 생성 호출
 
-from src.services.solution_service_v2 import explain_solution
+# from src.services.v2.solution_service_v2 import explain_solution
+from src.services.solution_service_v3 import explain_solution
 from src.schemas.solution_schema_v2 import SolutionRequest, SolutionResponse
 
 async def generate_explanation(request: SolutionRequest) -> SolutionResponse:

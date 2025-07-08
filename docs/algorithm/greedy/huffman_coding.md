@@ -1,5 +1,4 @@
-# Huffman Coding
-
+# 허프만 코딩 / Huffman Coding
 ## 📌 Definition
 
 **Huffman Coding** is a **lossless data compression** algorithm that assigns **variable-length binary codes** to input characters based on their frequencies. Characters that occur more frequently are assigned shorter codes, resulting in efficient compression.  

@@ -1,4 +1,4 @@
-# Longest Common Subsequence (LCS)
+# 최장 공통 부분 수열 / Longest Common Subsequence (LCS)
 
 ## 📌 Definition  
 Given two strings **s₁** (length _m_) and **s₂** (length _n_), the **Longest Common Subsequence** is the longest sequence of characters that appears in both strings **in the same relative order**, but not necessarily contiguously.  

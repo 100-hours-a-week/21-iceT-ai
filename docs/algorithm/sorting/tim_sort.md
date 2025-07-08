@@ -1,4 +1,4 @@
-# Tim Sort
+# 팀 정렬 / Tim Sort
 
 ## 📌 Definition
 

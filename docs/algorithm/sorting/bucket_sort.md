@@ -1,4 +1,4 @@
-# Bucket Sort
+# 버킷 정렬 / Bucket Sort
 
 ## 📌 Definition
 

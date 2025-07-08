@@ -1,4 +1,4 @@
-# 0/1 Knapsack Problem
+# 배낭문제 / 0/1 Knapsack Problem
 
 ## 📌 Definition
 Given `n` items with `value[i]` and `weight[i]`, and a knapsack with capacity `W`, choose items to **maximize the total value** without exceeding the weight limit.  

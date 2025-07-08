@@ -1,4 +1,4 @@
-# Merge Sort
+# 병합 정렬 / Merge Sort
 
 ## 📌 Definition
 

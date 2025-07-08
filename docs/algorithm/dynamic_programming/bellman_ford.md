@@ -1,4 +1,4 @@
-# Bellman–Ford Algorithm
+# 벨만-포드 / Bellman–Ford Algorithm
 
 ## 📌 Definition  
 Given a **weighted directed graph** with **V vertices** and **E edges**, and a **source node `src`**, the **Bellman-Ford Algorithm** computes the shortest distances from `src` to all vertices.  

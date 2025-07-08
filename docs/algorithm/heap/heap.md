@@ -1,4 +1,4 @@
-# Heap Data Structure
+# 힙 / Heap Data Structure
 
 ## 📌 Definition
 

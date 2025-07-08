@@ -1,4 +1,4 @@
-# Prim’s Algorithm for Minimum Spanning Tree (MST)
+# 프림 / Prim’s Algorithm for Minimum Spanning Tree (MST)
 
 ## 📌 Definition
 

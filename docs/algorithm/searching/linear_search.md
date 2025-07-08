@@ -1,4 +1,4 @@
-# Linear Search
+# 선형 탐색 / Linear Search
 
 ## 📌 Definition
 

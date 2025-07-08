@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 # FAISS에서 검색 가능하도록 retriever 생성
 retriever = load_vectorstore().as_retriever()
 
+# 문서 검색 함수
 @traceable(run_type="retriever")
 async def retrieve_docs(query: str):
     return await retriever.ainvoke(query)

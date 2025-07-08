@@ -1,4 +1,4 @@
-# Deque (Double-Ended Queue)
+# 덱 / Deque (Double-Ended Queue)
 
 ## 📌 Definition
 

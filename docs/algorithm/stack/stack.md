@@ -1,4 +1,4 @@
-# Stack Data Structure
+# 스택 / Stack Data Structure
 
 ## 📌 Definition
 

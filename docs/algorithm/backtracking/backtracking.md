@@ -1,4 +1,4 @@
-# Backtracking Algorithm
+# 백트래킹 / Backtracking Algorithm
 
 ## 📌 Definition
 
