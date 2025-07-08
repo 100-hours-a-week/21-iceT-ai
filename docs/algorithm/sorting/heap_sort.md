@@ -1,4 +1,4 @@
-# Heap Sort
+# 힙 정렬 / Heap Sort
 
 ## 📌 Definition
 

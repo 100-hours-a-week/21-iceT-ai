@@ -1,4 +1,4 @@
-# Cycle Sort
+# 사이클 정렬 / Cycle Sort
 
 ## 📌 Definition
 

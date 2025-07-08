@@ -1,4 +1,4 @@
-# Randomized Algorithms
+# 랜덤 알고리즘 / Randomized Algorithms
 
 ## 📌 Definition
 

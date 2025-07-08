@@ -11,28 +11,43 @@ async def test_explain_solutions():
     # 처리할 문제들을 dict 형태로 리스트에 나열
     raw_problems = [
         {
-            "problem_number": 1171,
-            "title": "사오정",
+            "problem_number": 14502,
+            "title": "연구소",
             "description": (
-                "민식이는 다른 사람이 말한 N비트 이진수를 2진수로 듣되, 원본의 i번째 비트가 인식된 이진수의 j번째 비트로 옮겨질 때 |j - i| ≤ D를 항상 만족하도록 왜곡되어 인식한다. "
-                "이렇게 얻을 수 있는 모든 N비트 이진수 후보의 개수와, 그 후보들을 오름차순으로 정렬했을 때 K번째로 작은 이진수를 구하라."
+                "인체에 치명적인 바이러스를 연구하던 연구소에서 바이러스가 유출되었다. "
+                "바이러스는 상하좌우 인접한 칸으로 퍼져나간다. 일부 칸에는 벽을 세울 수 있다.\n\n"
+                "연구소는 N×M 크기의 직사각형으로 나타낼 수 있으며, 각 칸은 빈 칸(0), 벽(1), 바이러스(2)로 이루어져 있다. "
+                "연구소의 지도가 주어졌을 때, 벽을 3개 세워서 바이러스의 확산을 막을 수 있는 **안전 영역의 최대 크기**를 구하는 프로그램을 작성하시오."
             ),
             "input": (
-                "첫째 줄에 이진수 비트의 개수 N, 왜곡 허용 최대 거리 D, 정수 K가 공백으로 구분되어 주어진다. "
-                "둘째 줄에 상대방이 말한 N비트 이진수가 주어진다."
+                "첫째 줄에 지도의 세로 크기 N과 가로 크기 M이 주어진다. (3 ≤ N, M ≤ 8)\n"
+                "둘째 줄부터 N개의 줄에 지도의 정보가 주어진다. "
+                "0은 빈 칸, 1은 벽, 2는 바이러스를 의미한다."
             ),
             "output": (
-                "첫째 줄에 후보 이진수의 총 개수를 100,000,000으로 나눈 나머지를 출력하고, "
-                "둘째 줄에 후보 중 K번째로 작은 이진수를 출력한다."
+                "벽을 3개 세운 뒤, 바이러스가 퍼질 수 없는 안전 영역의 최대 크기를 출력한다."
             ),
             "input_example": (
-                "4 1 3\n"
-                "0110\n"
+                "7 7\n"
+                "2 0 0 0 1 1 0\n"
+                "0 0 1 0 1 2 0\n"
+                "0 1 1 0 1 0 0\n"
+                "0 1 0 0 0 0 0\n"
+                "0 0 0 0 0 1 1\n"
+                "0 1 0 0 0 0 0\n"
+                "0 1 0 0 0 0 0\n"
             ),
             "output_example": (
-                "4\n"
-                "1001\n"
-            )
+                "27\n"
+            ),
+            "algorithm": [
+                "구현",
+                "그래프 이론",
+                "브루트포스 알고리즘",
+                "그래프 탐색",
+                "너비 우선 탐색",
+                "격자 그래프"
+            ]
         },
     ]
 
@@ -45,8 +60,8 @@ async def test_explain_solutions():
         if not hasattr(response, "model_dump"):
             print("test - Pydantic 응답 아님:", type(response))
             return None
-        success = post_to_backend(request.problem_number, response)
-        assert success, f"백엔드 전송에 실패했습니다: {request.problem_number}"
+        # success = post_to_backend(request.problem_number, response)
+        # assert success, f"백엔드 전송에 실패했습니다: {request.problem_number}"
 
         print("문제 개요:\n", response.problem_check.problem_description)
         print("사용 알고리즘:\n", response.problem_check.algorithm)

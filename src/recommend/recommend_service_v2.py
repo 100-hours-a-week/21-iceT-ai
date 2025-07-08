@@ -3,11 +3,11 @@
 
 from typing import List
 import requests
+from langsmith import traceable
 from langchain.schema import Document
 from langchain_community.vectorstores import FAISS
-from langchain_community.retrievers import BM25Retriever, EnsembleRetriever
-from langchain.retrievers import MaximalMarginalRelevanceRetriever, RerankRetriever
-from sentence_transformers import CrossEncoder
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 from src.core.embedding_model import get_embedder
 from src.recommend.problem_loader import fetch_all_problems
 from src.config import GETPROBLEM_BACKEND_URL, RECOMMEND_BACKEND_URL, BACKEND_TIMEOUT
@@ -16,6 +16,7 @@ from src.config import GETPROBLEM_BACKEND_URL, RECOMMEND_BACKEND_URL, BACKEND_TI
 _all_probs = list(fetch_all_problems())
 _id2meta = {p['id']: p for p in _all_probs}
 _id2text = {p['id']: f"# {p['title']}\n\n{p['description']}" for p in _all_probs}
+_id2tags = {p['id']: p['tags'] for p in _all_probs}
 
 # 티어, 태그 조합별 문제 ID 집합 미리 계산
 _problems_by_tier_tag: dict[tuple[int, str], set[int]] = {}
@@ -31,8 +32,10 @@ def get_user_history() -> List[int]:
 
 # 추천 로직: 전날 문제 각각에 대해 tier±1 후보 1개씩 4가지 조합 생성
 # (각 candidate set 당 FAISS 인덱스 + BM25/Ensemble/MMR/Rerank)
-def recommend_for_user() -> List[List[int]]:
-    history = get_user_history()
+@traceable(run_type="retriever")
+def recommend_for_user(history: List[int]=None) -> List[List[int]]:
+    if history is None:
+        history = get_user_history()
     embedder = get_embedder()
     results: dict[int, dict[str, int | None]] = {}
 
@@ -40,10 +43,6 @@ def recommend_for_user() -> List[List[int]]:
     bm25_k = 5
     dense_k = 10
     score_threshold = 0.7
-    mmr_k = 5
-    mmr_lambda = 0.6
-    rerank_k = 1
-    cross_model = 'cross-encoder/ms-marco-MiniLM-L-6-v2'
 
     for pid in history:
         meta = _id2meta[pid]
@@ -56,44 +55,41 @@ def recommend_for_user() -> List[List[int]]:
             for tag in tags:
                 cand_ids |= _problems_by_tier_tag.get((tgt, tag), set())
 
-            docs = [Document(page_content=_id2text[i], metadata=_id2meta[i]) for i in cand_ids]
-            if not docs:
+            docs_text = [Document(page_content=_id2text[i], metadata=_id2meta[i]) for i in cand_ids]
+            docs_tags = [
+                Document(
+                    page_content=" ".join(_id2tags[i]),
+                    metadata=_id2meta[i]
+                )
+                for i in cand_ids
+            ]
+            if not docs_text:
                 dir_map[direction] = None
                 continue
 
-            # BM25 리트리버
-            bm25 = BM25Retriever.from_documents(docs)
-            bm25.k = bm25_k
+            # 태그 기반 BM25 리트리버
+            bm25_tags = BM25Retriever.from_documents(docs_tags)
+            bm25_tags.k = bm25_k
+
+            # 설명 기반 BM25 리트리버
+            bm25_text = BM25Retriever.from_documents(docs_text)
+            bm25_text.k = bm25_k
 
             # Dense 리트리버
-            dense = FAISS.from_documents(docs, embedder).as_retriever(
+            dense = FAISS.from_documents(docs_text, embedder).as_retriever(
                 search_type='similarity_score_threshold',
                 search_kwargs={'k': dense_k, 'score_threshold': score_threshold}
             )
 
-            # Sparse+Dense 앙상블
+            # BM25+Dense 앙상블
             ensemble = EnsembleRetriever(
-                retrievers=[bm25, dense],
-                weights=[0.3, 0.7]
-            )
-
-            # MMR 다양성 강화
-            mmr = MaximalMarginalRelevanceRetriever(
-                retriever=ensemble,
-                k=mmr_k,
-                lambda_mult=mmr_lambda
-            )
-
-            # Cross-Encoder 재랭킹
-            cross = CrossEncoder(cross_model)
-            reranker = RerankRetriever.from_retriever(
-                retriever=mmr,
-                cross_encoder=cross,
-                k=rerank_k
+                retrievers=[bm25_tags, bm25_text, dense],
+                weights=[0.5, 0.1, 0.4]
             )
 
             # 최종 1개 추천
-            top_docs = reranker.invoke(_id2text[pid], top_k=1)
+            query = " ".join(tags)
+            top_docs = ensemble.invoke(query, top_k=1)
             dir_map[direction] = top_docs[0].metadata['id'] if top_docs else None
 
         results[pid] = dir_map

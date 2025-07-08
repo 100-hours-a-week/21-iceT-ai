@@ -1,4 +1,4 @@
-# Radix Sort
+# 기수 정렬 / Radix Sort
 
 ## 📌 Definition
 

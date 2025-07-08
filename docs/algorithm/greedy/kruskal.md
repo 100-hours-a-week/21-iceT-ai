@@ -1,4 +1,4 @@
-# Kruskal’s Minimum Spanning Tree (MST) Algorithm
+# 크루스칼 / Kruskal’s Minimum Spanning Tree (MST) Algorithm
 
 ## 📌 Definition
 

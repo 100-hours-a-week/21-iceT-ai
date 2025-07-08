@@ -5,7 +5,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "boj.csv"
+CSV_PATH = Path(__file__).resolve().parents[1] / "data" / "boj.csv"
 
 # CSV에서 모든 문제 데이터 조회
 def fetch_all_problems():

@@ -1,4 +1,4 @@
-# Two Pointers Technique
+# 투 포인터 / Two Pointers Technique
 
 ## 📌 Definition
 

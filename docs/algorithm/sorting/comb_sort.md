@@ -1,4 +1,4 @@
-# Comb Sort
+# 콤 정렬 / Comb Sort
 
 ## 📌 Definition
 

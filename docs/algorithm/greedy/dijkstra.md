@@ -1,4 +1,4 @@
-# Dijkstra's Algorithm
+# 다익스트라 / Dijkstra's Algorithm
 
 ## 📌 Definition
 Given a **weighted undirected graph** with `V` vertices and `E` edges, and a source node `src`, compute the **shortest distance** from the source to **all other vertices**.  

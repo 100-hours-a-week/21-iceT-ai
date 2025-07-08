@@ -1,4 +1,4 @@
-# Depth-First Search (DFS) for a Graph
+# 깊이 우선 탐색 / Depth-First Search (DFS) for a Graph
 
 ## 📌 Definition
 
