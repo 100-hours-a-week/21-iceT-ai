@@ -28,7 +28,7 @@ for p in _all_probs:
 def get_user_history() -> List[int]:
     resp = requests.get(GETPROBLEM_BACKEND_URL, timeout=BACKEND_TIMEOUT)
     resp.raise_for_status()
-    return resp.json().get('yesterdayIds', [])[:2]
+    return resp.json().get('data', {}).get('previousProblemIds', [])[:2]
 
 # 추천 로직: 전날 문제 각각에 대해 tier±1 후보 1개씩 4가지 조합 생성
 # (각 candidate set 당 FAISS 인덱스 + BM25/Ensemble/MMR/Rerank)
