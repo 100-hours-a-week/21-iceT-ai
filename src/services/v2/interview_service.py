@@ -2,12 +2,10 @@ import httpx, asyncio
 from datetime import datetime
 from typing import AsyncGenerator
 from src.config import settings, BACKEND_INTERVIEW_URL
-from src.core.utils.chat_logger import append_chat_session, append_chat_record
 from src.core.utils.history_utils import build_context_text
 from src.adapters.v2.llm_interview import call_agent
 from src.schemas.v2.interview_schema import InterviewStartRequest, InterviewfollowRequest
 from src.core.v2.chat_prompt_templates import INTERVIEW_START_PROMPT, INTERVIEW_FLOW_DECIDER_PROMPT, QUESTION_AGENT_PROMPT, FOLLOWUP_AGENT_PROMPT, EVALUATION_AGENT_PROMPT
-from src.core.utils.chat_logger import append_chat_record
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,10 +25,8 @@ async def notify_interview_end(session_id: str):
 
 #  /interview/start
 async def handle_interview_start(req: InterviewStartRequest):
-    append_chat_session(req.sessionId, req.problemNumber, req.title, datetime.now().isoformat())
-    append_chat_record(req.sessionId, "user", req.code)
 
-    problem_text = f"{req.title}\n{req.description}\n입력: {req.inputRule}\n출력: {req.outputRule}\n예시: {req.inputExample} → {req.outputExample}"
+    problem_text = f"{req.title}\n{req.description}\n입력: {req.inputDescription}\n출력: {req.outputDescription}\n예시: {req.inputExample} → {req.outputExample}"
     prompt = INTERVIEW_START_PROMPT.format(problem=problem_text, language=req.codeLanguage)
     return await call_agent(
         prompt,
@@ -41,10 +37,6 @@ async def handle_interview_start(req: InterviewStartRequest):
 
 async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
-
-    last_user_msg = next((m.content for m in reversed(req.messages) if m.role == "user"), None)
-    if last_user_msg:
-        append_chat_record(req.sessionId, "user", last_user_msg)
 
     context_text = build_context_text(messages, summary=req.summary)
 
