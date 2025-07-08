@@ -1,1 +1,0 @@
-0 10 * * * root PYTHONPATH=/crawler /usr/local/bin/python /crawler/src/run_daily_pipeline.py >> /crawler/logs/cron.log 2>&1

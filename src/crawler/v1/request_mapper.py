@@ -1,6 +1,6 @@
 # 크롤링 dict -> SolutionRequest 변환
 
-from src.solchat.schemas.v1.solution_schema import SolutionRequest
+from src.schemas.solution_schema import SolutionRequest
 
 def to_solution_request(problem_data: dict, language="python") -> SolutionRequest:
     return SolutionRequest(

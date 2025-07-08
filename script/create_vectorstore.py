@@ -3,7 +3,7 @@
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import FAISS
-from src.solchat.core.embedding_model import get_embedder
+from adapters.embedding_model import get_embedder
 import os, logging
 from dotenv import load_dotenv
 
