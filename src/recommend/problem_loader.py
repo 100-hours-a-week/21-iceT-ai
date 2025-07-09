@@ -25,4 +25,4 @@ def fetch_all_problems():
                     "tags":        [t.strip() for t in row["tags"].split(",") if t.strip()]
                 }
             except (KeyError, ValueError) as e:
-                logger.warning(f"잘못된 행 건너뜀: {e} ▶ {row}")
+                continue
