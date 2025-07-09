@@ -1,8 +1,9 @@
+
 # 테스트 코드
 # 실행 방법 : python -m pytest -s tests/test_solution_generator_v2.py
 
 import pytest
-from src.schemas.v2.solution_schema_v2 import SolutionRequest
+from src.schemas.solution_schema_v2 import SolutionRequest
 from src.crawler.v2.solution_generater_v2 import generate_explanation
 from src.crawler.v2.post_client_v2 import post_to_backend
 

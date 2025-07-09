@@ -5,7 +5,7 @@ from typing import List
 import requests
 from langchain.schema import Document
 from langchain_community.vectorstores import FAISS
-from src.core.embedding_model import get_embedder
+from adapters.embedding_model import get_embedder
 from src.recommend.problem_loader import fetch_all_problems
 from src.config import GETPROBLEM_BACKEND_URL, RECOMMEND_BACKEND_URL, BACKEND_TIMEOUT
 

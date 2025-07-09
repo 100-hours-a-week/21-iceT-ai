@@ -1,7 +1,7 @@
 import os, platform, logging
 from google.cloud import storage
 from langchain_community.vectorstores import FAISS
-from src.core.embedding_model import get_embedder
+from src.adapters.embedding_model import get_embedder
 from dotenv import load_dotenv
 
 load_dotenv()
