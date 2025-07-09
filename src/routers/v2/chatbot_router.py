@@ -7,7 +7,7 @@ from src.schemas.chatbot_schema import (
     FeedbackRequest, FeedbackfollowRequest,
     SummaryRequest, SummaryResponse
 )
-from src.services.chatbot_service import (
+from src.services.chatbot_service_v2 import (
     handle_interview_start, handle_interview_answer,
     handle_feedback_start, handle_feedback_answer,
     summarize_chat
