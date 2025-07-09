@@ -109,4 +109,4 @@ def send_recommendations(combos: List[List[int]]) -> None:
     payload = {'recommendations': combos}
     resp = requests.post(RECOMMEND_BACKEND_URL, json=payload, timeout=BACKEND_TIMEOUT)
     resp.raise_for_status()
-    print('백엔드 전송 성공:', resp.json())
+    print('백엔드 전송 성공:', resp.status_code)
