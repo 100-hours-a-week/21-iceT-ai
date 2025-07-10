@@ -2,7 +2,7 @@ name: Build and Deploy to ECR
 
 on:
   push:
-    branches: [ "feat/2-chatbot" ]
+    branches: [ "fix/76-apitest" ]
   workflow_dispatch: 
   
 jobs:
