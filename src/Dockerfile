@@ -13,5 +13,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # FastAPI 서버 실행 (main.py 직접 실행)
-#CMD ["python", "-m", "main"]
-CMD ["python", "main.py"]
+CMD ["python", "-m", "src.main"]
+#CMD ["python", "main.py"]
