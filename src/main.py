@@ -9,8 +9,8 @@ setup_logging()
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
-    title="코딩테스트 도우미 서비스",
-    version="1.0.0",
+    title="Koco AI",
+    version="2.0.0",
 )
 
 # 예외 핸들러 등록
