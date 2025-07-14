@@ -11,53 +11,67 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
     full_output = ""
 
     try:
+        # response가 async iterator 또는 일반 iterator 모두 처리
+        iterator = response
         if hasattr(response, "__aiter__"):
-            async for chunk in response:
-                delta = chunk.choices[0].delta
-                if delta and delta.content:
-                    content = delta.content
-                    buffer += content
-                    line_buf += content
-                    full_output += content
-
-                    while "\n" in line_buf:
-                        line, line_buf = line_buf.split("\n", 1)
-                        tokens = re.findall(r"\S+|\s", line)
-                        for token in tokens:
-                            if token == " ":
-                                yield "data:  \n\n"
-                            else:
-                                yield f"data: {token}\n\n"
-                        yield "data: \\n\n\n"
-                    await asyncio.sleep(0)
+            iterator = response.__aiter__()
+            async def next_chunk():
+                return await iterator.__anext__()
+            is_async = True
         else:
-            for chunk in response:
-                delta = chunk.choices[0].delta
-                if delta and delta.content:
-                    content = delta.content
-                    buffer += content
-                    line_buf += content
-                    full_output += content
+            iterator = iter(response)
+            def next_chunk():
+                return next(iterator)
+            is_async = False
 
-                    while "\n" in line_buf:
-                        line, line_buf = line_buf.split("\n", 1)
-                        tokens = re.findall(r"\S+|\s", line)
+        while True:
+            try:
+                chunk = await next_chunk() if is_async else next_chunk()
+            except (StopIteration, StopAsyncIteration):
+                break
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                content = delta.content
+                buffer += content
+                line_buf += content
+                full_output += content
+
+                while "\n" in line_buf:
+                    line, line_buf = line_buf.split("\n", 1)
+                    if re.match(r"^#+\s", line):
+                        yield f"data: {line}\n\n"
+                        if not line_buf.startswith("\n"):
+                            yield "data: \\n\n\n"
+                    else:
+                        tokens = re.findall(r"\S+|\s+", line)
+                        last_token_was_newline = False
                         for token in tokens:
-                            if token == " ":
-                                yield "data:  \n\n"
+                            if token == "\n" or token.isspace():
+                                if not last_token_was_newline:
+                                    yield "data: \\n\n\n"
+                                    last_token_was_newline = True
                             else:
                                 yield f"data: {token}\n\n"
-                        yield "data: \\n\n\n"
+                                last_token_was_newline = False
+                if is_async:
                     await asyncio.sleep(0)
 
         # 남은 줄 처리
         if line_buf.strip():
-            tokens = re.findall(r"\S+|\s", line_buf)
-            for token in tokens:
-                if token == " ":
-                    yield "data:  \n\n"
-                else:
-                    yield f"data: {token}\n\n"
+            if re.match(r"^#+\s", line_buf):
+                yield f"data: {line_buf}\n\n"
+                yield "data: \\n\n\n"
+            else:
+                tokens = re.findall(r"\S+|\s+", line_buf)
+                last_token_was_newline = False
+                for token in tokens:
+                    if token == "\n" or token.isspace():
+                        if not last_token_was_newline:
+                            yield "data: \\n\n\n"
+                            last_token_was_newline = True
+                    else:
+                        yield f"data: {token}\n\n"
+                        last_token_was_newline = False
 
     except Exception as e:
         yield f"data: [ERROR] {str(e)}\n\n"
