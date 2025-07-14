@@ -6,9 +6,13 @@ from langsmith.client import Client
 client = Client()
 
 async def wrap_stream_response(response, session_id: str = None, prompt: str = "") -> AsyncGenerator[str, None]:
+    import time
     buffer = ""
     line_buf = ""
     full_output = ""
+    start_time = time.time()
+    first_response_time = None
+    print(f"[STREAM] 시작: {start_time}")
 
     try:
         # response가 async iterator 또는 일반 iterator 모두 처리
@@ -27,6 +31,8 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
         while True:
             try:
                 chunk = await next_chunk() if is_async else next_chunk()
+                if first_response_time is None:
+                    first_response_time = time.time()
             except (StopIteration, StopAsyncIteration):
                 break
             delta = chunk.choices[0].delta
@@ -46,10 +52,12 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
                         tokens = re.findall(r"\S+|\s+", line)
                         last_token_was_newline = False
                         for token in tokens:
-                            if token == "\n" or token.isspace():
+                            if token == "\n":
                                 if not last_token_was_newline:
                                     yield "data: \\n\n\n"
                                     last_token_was_newline = True
+                            elif token.isspace():
+                                yield f"data: {token}\n\n"
                             else:
                                 yield f"data: {token}\n\n"
                                 last_token_was_newline = False
@@ -65,10 +73,12 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
                 tokens = re.findall(r"\S+|\s+", line_buf)
                 last_token_was_newline = False
                 for token in tokens:
-                    if token == "\n" or token.isspace():
+                    if token == "\n":
                         if not last_token_was_newline:
                             yield "data: \\n\n\n"
                             last_token_was_newline = True
+                    elif token.isspace():
+                        yield f"data: {token}\n\n"
                     else:
                         yield f"data: {token}\n\n"
                         last_token_was_newline = False
@@ -76,14 +86,21 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
     except Exception as e:
         yield f"data: [ERROR] {str(e)}\n\n"
     finally:
-            try:
-                run = client.create_run(
-                    name="Streamed Response",
-                    run_type="llm",
-                    inputs={"prompt": prompt},
-                    outputs={"output": full_output},
-                    metadata={"session_id": session_id or "unknown"}
-                )
-                run.end(outputs={"output": full_output})
-            except Exception:
-                pass
+        end_time = time.time()
+        print(f"[STREAM] 시작: {start_time}")
+        print(f"[STREAM] 첫 응답: {first_response_time}")
+        print(f"[STREAM] 완료: {end_time}")
+        if first_response_time:
+            print(f"[STREAM] 요청→첫응답: {first_response_time - start_time:.3f}초")
+        print(f"[STREAM] 전체 소요 시간: {end_time - start_time:.3f}초")
+        try:
+            run = client.create_run(
+                name="Streamed Response",
+                run_type="llm",
+                inputs={"prompt": prompt},
+                outputs={"output": full_output},
+                metadata={"session_id": session_id or "unknown"}
+            )
+            run.end(outputs={"output": full_output})
+        except Exception:
+            pass

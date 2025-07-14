@@ -1,6 +1,9 @@
 import heapq
 import time
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 class APIKeyManager:
     def __init__(self, keys, default_cooldown_sec=60):
@@ -28,6 +31,13 @@ class APIKeyManager:
                 next_time = now + self.cooldown
                 self.key_next_available[key] = next_time
                 heapq.heappush(self.pq, (next_time, key))
+                # 마스킹: 앞 4글자 + ... + 뒤 4글자
+                if len(key) > 8:
+                    masked = f"{key[:4]}...{key[-4:]}"
+                else:
+                    masked = key
+                logger.info(f"[APIKeyManager] 사용 API KEY: {masked}")
+                print(f"[APIKeyManager] 사용 API KEY: {masked}")
                 return key
 
     def mark_rate_limited(self, key, retry_after_sec):

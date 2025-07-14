@@ -37,11 +37,12 @@ def download_faiss_from_gcs():
 # FAISS 벡터스토어 로딩 (GCS에서 받아온 인덱스 기반)
 def load_vectorstore():
     try:
-        if platform.system() != "Windows":
+        # 모든 OS에서 인덱스 없으면 다운로드 시도
+        if not os.path.exists(os.path.join(LOCAL_INDEX_DIR, "index.faiss")):
             download_faiss_from_gcs()
 
         embedder = get_embedder()
-        index_dir = "vector/faiss_index" if platform.system() == "Windows" else LOCAL_INDEX_DIR
+        index_dir = LOCAL_INDEX_DIR
 
         return FAISS.load_local(
             index_dir,

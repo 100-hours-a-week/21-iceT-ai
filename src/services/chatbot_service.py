@@ -40,79 +40,87 @@ async def notify_interview_end(session_id: int, finished: bool):
 async def handle_interview_start(req: InterviewStartRequest):
     problem_text = f"{req.title}\n{req.description}\n입력: {req.inputDescription}\n출력: {req.outputDescription}\n예시: {req.inputExample} → {req.outputExample}"
     prompt = INTERVIEW_START_PROMPT.format(problem=problem_text, language=req.codeLanguage)
-    return await call_interview_agent(
-        prompt,
-        stream=True,
-        max_tokens=settings.max_tokens_interview_start,
-        session_id=req.sessionId, 
-    )
+    try:
+        return await call_interview_agent(
+            prompt,
+            stream=True,
+            max_tokens=settings.max_tokens_interview_start,
+            session_id=req.sessionId, 
+        )
+    except Exception as e:
+        logger.error(f"[handle_interview_start] Interview 실패: {e}, prompt={prompt}, req={req}")
+        raise
 
 async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
     context_text = build_context_text(messages, summary=getattr(req, "summary", None))
 
     assistant_questions = [m for m in messages if m["role"] == "assistant"]
-    if len(assistant_questions) >= 5:
-        evaluation_stream = await call_interview_agent(
-            EVALUATION_AGENT_PROMPT.format(context=context_text),
-            stream=True,
-            max_tokens=settings.max_tokens_interview_answer,
-            session_id=req.sessionId,
+    try:
+        if len(assistant_questions) >= 5:
+            evaluation_stream = await call_interview_agent(
+                EVALUATION_AGENT_PROMPT.format(context=context_text),
+                stream=True,
+                max_tokens=settings.max_tokens_interview_answer,
+                session_id=req.sessionId,
+            )
+            asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
+            return evaluation_stream
+
+        # 대화 흐름 판단 (followup / question / end)
+        flow_decision = await call_interview_agent(
+            INTERVIEW_FLOW_DECIDER_PROMPT.format(context=context_text),
+            stream=False,
+            max_tokens=10
         )
-        asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
-        return evaluation_stream
+        decision = flow_decision.strip().lower()
 
-    # 대화 흐름 판단 (followup / question / end)
-    flow_decision = await call_interview_agent(
-        INTERVIEW_FLOW_DECIDER_PROMPT.format(context=context_text),
-        stream=False,
-        max_tokens=10
-    )
-    decision = flow_decision.strip().lower()
+        # 종료 판단 → 총평 스트리밍
+        if decision == "end":
+            evaluation_stream = await call_interview_agent(
+                EVALUATION_AGENT_PROMPT.format(context=context_text),
+                stream=True,
+                max_tokens=settings.max_tokens_interview_answer,
+                session_id=req.sessionId,
+            )
+            asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
+            return evaluation_stream
 
-    # 종료 판단 → 총평 스트리밍
-    if decision == "end":
-        evaluation_stream = await call_interview_agent(
-            EVALUATION_AGENT_PROMPT.format(context=context_text),
-            stream=True,
-            max_tokens=settings.max_tokens_interview_answer,
-            session_id=req.sessionId,
-        )
-        asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
-        return evaluation_stream
+        # 종료가 아닐 때도 상태 전달
+        asyncio.create_task(notify_interview_end(req.sessionId, finished=False))
 
-    # 종료가 아닐 때도 상태 전달
-    asyncio.create_task(notify_interview_end(req.sessionId, finished=False))
+        # followup or question → 스트리밍 질문 생성
+        if decision == "followup":
+            previous_question = messages[-2]["content"] if len(messages) >= 2 and messages[-2]["role"] == "assistant" else ""
+            user_response = messages[-1]["content"] if len(messages) >= 1 and messages[-1]["role"] == "user" else ""
 
-    # followup or question → 스트리밍 질문 생성
-    if decision == "followup":
-        previous_question = messages[-2]["content"] if len(messages) >= 2 and messages[-2]["role"] == "assistant" else ""
-        user_response = messages[-1]["content"] if len(messages) >= 1 and messages[-1]["role"] == "user" else ""
+            followup_stream = await call_interview_agent(
+                FOLLOWUP_AGENT_PROMPT.format(
+                    previous_question=previous_question,
+                    user_response=user_response
+                ),
+                stream=True,
+                max_tokens=settings.max_tokens_interview_answer,
+                session_id=req.sessionId,
+            )
+            return followup_stream
 
-        followup_stream = await call_interview_agent(
-            FOLLOWUP_AGENT_PROMPT.format(
-                previous_question=previous_question,
-                user_response=user_response
-            ),
-            stream=True,
-            max_tokens=settings.max_tokens_interview_answer,
-            session_id=req.sessionId,
-        )
-        return followup_stream
+        else:  # "question" 또는 fallback
+            avoid_list = "\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
 
-    else:  # "question" 또는 fallback
-        avoid_list = "\n".join(f"- {m['content']}" for m in messages if m["role"] == "assistant")
-
-        question_stream = await call_interview_agent(
-            QUESTION_AGENT_PROMPT.format(
-                context=context_text,
-                avoid_list=avoid_list
-            ),
-            stream=True,
-            max_tokens=settings.max_tokens_interview_answer,
-            session_id=req.sessionId,
-        )
-        return question_stream
+            question_stream = await call_interview_agent(
+                QUESTION_AGENT_PROMPT.format(
+                    context=context_text,
+                    avoid_list=avoid_list
+                ),
+                stream=True,
+                max_tokens=settings.max_tokens_interview_answer,
+                session_id=req.sessionId,
+            )
+            return question_stream
+    except Exception as e:
+        logger.error(f"[handle_interview_answer] Interview 실패: {e}, context={context_text}, req={req}")
+        raise
 
 # 피드백 서비스
 
@@ -122,11 +130,15 @@ async def handle_feedback_start(req: FeedbackRequest):
         code=req.code,
         language=req.codeLanguage,
     )
-    return await call_feedback_agent(
-        prompt,
-        stream=True,
-        max_tokens=settings.max_tokens_feedback_start
-    )
+    try:
+        return await call_feedback_agent(
+            prompt,
+            stream=True,
+            max_tokens=settings.max_tokens_feedback_start
+        )
+    except Exception as e:
+        logger.error(f"[handle_feedback_start] Feedback 실패: {e}, prompt={prompt}, req={req}")
+        raise
 
 async def handle_feedback_answer(req: FeedbackfollowRequest):
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
@@ -135,15 +147,23 @@ async def handle_feedback_answer(req: FeedbackfollowRequest):
         context=context_text,
         user_input=req.messages[-1].content
     )
-    return await call_feedback_agent(
-        prompt,
-        stream=True,
-        max_tokens=settings.max_tokens_feedback_answer,
-        session_id=req.sessionId,
-    )
+    try:
+        return await call_feedback_agent(
+            prompt,
+            stream=True,
+            max_tokens=settings.max_tokens_feedback_answer,
+            session_id=req.sessionId,
+        )
+    except Exception as e:
+        logger.error(f"[handle_feedback_answer] Feedback 실패: {e}, prompt={prompt}, req={req}")
+        raise
 
 # 요약 서비스
 
 async def summarize_chat(requests: List[SummaryRequest]) -> List[SummaryResponse]:
-    tasks = [generate_summary(r) for r in requests]
-    return await asyncio.gather(*tasks)
+    try:
+        tasks = [generate_summary(r) for r in requests]
+        return await asyncio.gather(*tasks)
+    except Exception as e:
+        logger.error(f"[summarize_chat] 요약 실패: {e}, requests={requests}")
+        raise
