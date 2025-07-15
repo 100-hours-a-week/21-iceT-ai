@@ -37,7 +37,6 @@ class APIKeyManager:
                 else:
                     masked = key
                 logger.info(f"[APIKeyManager] 사용 API KEY: {masked}")
-                print(f"[APIKeyManager] 사용 API KEY: {masked}")
                 return key
 
     def mark_rate_limited(self, key, retry_after_sec):

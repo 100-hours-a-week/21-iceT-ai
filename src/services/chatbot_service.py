@@ -45,7 +45,8 @@ async def handle_interview_start(req: InterviewStartRequest):
             prompt,
             stream=True,
             max_tokens=settings.max_tokens_interview_start,
-            session_id=req.sessionId, 
+            session_id=req.sessionId,
+            endpoint="interview-start"
         )
     except Exception as e:
         logger.error(f"[handle_interview_start] Interview 실패: {e}, prompt={prompt}, req={req}")
@@ -63,6 +64,7 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
                 stream=True,
                 max_tokens=settings.max_tokens_interview_answer,
                 session_id=req.sessionId,
+                endpoint="interview-answer"
             )
             asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
             return evaluation_stream
@@ -82,6 +84,7 @@ async def handle_interview_answer(req: InterviewfollowRequest) -> AsyncGenerator
                 stream=True,
                 max_tokens=settings.max_tokens_interview_answer,
                 session_id=req.sessionId,
+                endpoint="interview-answer"
             )
             asyncio.create_task(notify_interview_end(req.sessionId, finished=True))
             return evaluation_stream
@@ -134,7 +137,8 @@ async def handle_feedback_start(req: FeedbackRequest):
         return await call_feedback_agent(
             prompt,
             stream=True,
-            max_tokens=settings.max_tokens_feedback_start
+            max_tokens=settings.max_tokens_feedback_start,
+            endpoint="feedback-start"
         )
     except Exception as e:
         logger.error(f"[handle_feedback_start] Feedback 실패: {e}, prompt={prompt}, req={req}")
@@ -153,6 +157,7 @@ async def handle_feedback_answer(req: FeedbackfollowRequest):
             stream=True,
             max_tokens=settings.max_tokens_feedback_answer,
             session_id=req.sessionId,
+            endpoint="feedback-answer"
         )
     except Exception as e:
         logger.error(f"[handle_feedback_answer] Feedback 실패: {e}, prompt={prompt}, req={req}")
