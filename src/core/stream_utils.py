@@ -110,4 +110,3 @@ async def wrap_stream_response(response, session_id: str = None, prompt: str = "
                 print("[LangSmith run 생성 실패] run is None")
         except Exception as e:
             print(f"[LangSmith run 종료 오류] {e}")
-        yield "data: [DONE]\n\n"

@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     temperature_solution: float = 0.3
     max_tokens_solution: int = 65000
 
-    model_chat: str = "solar-pro"
+    # model_chat 값 예시:
+    # - Upstage Solar: "solar-pro"
+    # - Qwen: "Qwen/Qwen3-14B-AWQ"
+    # - ChatGPT(OpenAI): "gpt-3.5-turbo", "gpt-4"
+    model_chat: str = "gpt-4"
     temperature_chat: float = 0.3
     
     max_tokens_feedback_start: int = 4096
