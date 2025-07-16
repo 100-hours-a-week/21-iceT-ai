@@ -4,11 +4,29 @@ import logging
 from typing import List, AsyncGenerator
 
 from src.config import settings, BACKEND_INTERVIEW_URL
-from src.adapters.llm_client_v2 import (
-    call_interview_agent,
-    call_feedback_agent,
-    generate_summary,
-)
+
+# model_chat 값에 따라 LLM 클라이언트 동적 선택
+if "solar" in settings.model_chat.lower():
+    from src.adapters.llm_client_v2 import (
+        call_interview_agent,
+        call_feedback_agent,
+        generate_summary,
+    )
+elif "Qwen" in settings.model_chat.lower():
+    from src.adapters.llm_client_v3 import (
+        call_interview_agent,
+        call_feedback_agent,
+        generate_summary,
+    )
+elif "gpt" in settings.model_chat.lower() or "chatgpt" in settings.model_chat.lower():
+    from src.adapters.llm_client_v4 import (
+        call_interview_agent,
+        call_feedback_agent,
+        generate_summary,
+    )
+else:
+    raise ValueError(f"지원하지 않는 model_chat: {settings.model_chat}")
+
 from src.schemas.chatbot_schema import (
     InterviewStartRequest, InterviewfollowRequest,
     FeedbackRequest, FeedbackfollowRequest,
