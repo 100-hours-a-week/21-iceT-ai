@@ -1,7 +1,10 @@
 name: Deploy via SSM
 
 on:
-  workflow_dispatch:  # 수동 실행
+  push:
+    branches:
+      - fix/76-apitest
+  workflow_dispatch:
 
 jobs:
   deploy-to-ec2:
