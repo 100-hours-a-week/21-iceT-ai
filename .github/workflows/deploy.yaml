@@ -16,8 +16,8 @@ jobs:
       
     - name: Restore secret files (.env, gcp_key.json)
       run: 
-        echo "${{ secrets.ENV_FILE }}" > .env
-        echo '${{ secrets.GCP_KEY_JSON }}' > gcp_key.json
+        echo "${{ secrets.ENV_FILE }}" > src/.env
+        echo '${{ secrets.GCP_KEY_JSON }}' > src/gcp_key.json
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
