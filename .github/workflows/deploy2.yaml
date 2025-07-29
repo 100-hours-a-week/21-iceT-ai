@@ -40,4 +40,4 @@ jobs:
             "sudo docker ps -a",
             "sudo docker logs $(sudo docker ps -a -q --filter name=chatbot-api --limit 1)"
             ]'\
-          --output text
+          --output text 
