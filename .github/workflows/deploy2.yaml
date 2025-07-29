@@ -6,24 +6,24 @@ on:
    workflow_dispatch: 
    
 jobs:
-  build-and-push-ecr:
-    name: Build & Push to ECR
-    runs-on: ubuntu-latest
+  # build-and-push-ecr:
+  #   name: Build & Push to ECR
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout source code
-      uses: actions/checkout@v3
+  #   steps:
+  #   - name: Checkout source code
+  #     uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+  #   - name: Set up Docker Buildx
+  #     uses: docker/setup-buildx-action@v2
 
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
+  #   - name: Login to Amazon ECR
+  #     uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build and Push Docker image
-      run: |
-        docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
-        docker push ${{ secrets.ECR_REPOSITORY }}:latest
+  #   - name: Build and Push Docker image
+  #     run: |
+  #       docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+  #       docker push ${{ secrets.ECR_REPOSITORY }}:latest
 
   deploy-to-ec2:
     name: Deploy to EC2
