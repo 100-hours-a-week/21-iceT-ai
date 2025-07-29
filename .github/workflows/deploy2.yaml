@@ -1,8 +1,10 @@
 name: Deploy Chatbot API to EC2
 
 on:
-  workflow_dispatch:  # 클릭하여 수동 실행 가능
-
+   push:
+     branches: [ "fix/76-apitest" ]
+   workflow_dispatch: 
+   
 jobs:
   build-and-push-ecr:
     name: Build & Push to ECR
