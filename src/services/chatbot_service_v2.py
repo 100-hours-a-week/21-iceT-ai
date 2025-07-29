@@ -32,6 +32,8 @@ from src.schemas.chatbot_schema import (
 
 # 세션ID별 질문 뱅크 저장 (모듈 레벨)
 _question_banks: Dict[str, List[str]] = {}
+# 세션ID별 이전 응답 저장 (재생성 로직용)
+_session_responses: Dict[str, List[str]] = {}
 _lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
@@ -75,6 +77,31 @@ def clear_question_bank(session_id: str) -> None:
         else:
             logger.warning(f"[QUESTION_BANK] Session {session_id}: 정리할 질문 뱅크가 없음")
 
+def get_session_responses(session_id: str) -> List[str]:
+    """세션의 이전 응답들을 가져옵니다."""
+    with _lock:
+        return _session_responses.get(session_id, []).copy()
+
+def add_session_response(session_id: str, response: str) -> None:
+    """세션에 새로운 응답을 추가합니다."""
+    with _lock:
+        if session_id not in _session_responses:
+            _session_responses[session_id] = []
+        _session_responses[session_id].append(response)
+        # 최대 5개까지만 유지 (메모리 절약)
+        if len(_session_responses[session_id]) > 5:
+            _session_responses[session_id] = _session_responses[session_id][-5:]
+        logger.debug(f"[SESSION_RESPONSES] Session {session_id}: 응답 추가 ({len(_session_responses[session_id])}개 저장)")
+
+def clear_session_responses(session_id: str) -> None:
+    """세션의 응답 히스토리를 정리합니다."""
+    with _lock:
+        removed_responses = _session_responses.pop(session_id, [])
+        if removed_responses:
+            logger.info(f"[SESSION_RESPONSES] Session {session_id}: 응답 히스토리 정리 완료 ({len(removed_responses)}개 응답 삭제)")
+        else:
+            logger.warning(f"[SESSION_RESPONSES] Session {session_id}: 정리할 응답 히스토리가 없음")
+
 class ChatbotService:
     # --- Feedback ---
     @traceable(run_type="chain", name="feedback_start_endpoint", tags=["feedback", "start", "multi-agent"])
@@ -100,11 +127,25 @@ class ChatbotService:
         bad = await call_feedback_agent(prompt2, stream=False)
         logger.info(f"[MULTI_AGENT] Session {session_id}: Agent 2/3 - 개선할 점 생성 완료 ({len(str(bad))} chars)")
 
-        # 3) 개선된 코드
+        # 3) 개선된 코드 - 재생성 로직 활성화
         logger.info(f"[MULTI_AGENT] Session {session_id}: Agent 3/3 - 개선된 코드 생성 시작")
-        prompt3 = feedback_start_fix_code(req)
+        prompt3 = feedback_start_fix_code(req, str(good), str(bad))
         logger.debug(f"[MULTI_AGENT] Session {session_id}: 개선된 코드 프롬프트 길이: {len(prompt3)} chars")
-        fixed_code = await call_feedback_agent(prompt3, stream=False)
+        
+        # 이전 응답들을 가져와서 재생성 로직에 사용
+        prev_responses = get_session_responses(session_id)
+        logger.debug(f"[MULTI_AGENT] Session {session_id}: 이전 응답 {len(prev_responses)}개 로드됨")
+        
+        fixed_code = await call_feedback_agent(
+            prompt3, 
+            stream=False, 
+            session_id=session_id, 
+            endpoint="feedback-fix-code",
+            prev_responses=prev_responses
+        )
+        
+        # 생성된 응답을 세션에 저장
+        add_session_response(session_id, str(fixed_code))
         logger.info(f"[MULTI_AGENT] Session {session_id}: Agent 3/3 - 개선된 코드 생성 완료 ({len(str(fixed_code))} chars)")
 
         # 마크다운 헤더·본문·코드블록을 한꺼번에 조립

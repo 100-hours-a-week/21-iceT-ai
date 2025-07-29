@@ -22,4 +22,5 @@ secret/
 *.json
 
 # sql
+.env copy
 *.sql

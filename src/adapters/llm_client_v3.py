@@ -4,6 +4,7 @@ from typing import Generator, List, Optional, Tuple
 from dotenv import load_dotenv
 from langsmith import traceable
 import re
+import asyncio
 from google import genai
 from google.genai import types
 from openai import OpenAI
@@ -57,26 +58,64 @@ def chunk_text_words(text: str, chunk_size: int = 1) -> Generator[str, None, Non
     for i in range(0, len(words), chunk_size):
         yield " ".join(words[i : i + chunk_size])
 
-def text_to_sse(text: str, chunk_size: int = 1) -> Generator[str, None, None]:
+def text_to_sse(text: str, chunk_size: int = 1, delay_ms: int = 50) -> Generator[str, None, None]:
     """
     단어 단위로 SSE(data: <chunk>\n\n)으로 wrap하여 반환하는 제너레이터입니다.
+    코드 블록 내부의 들여쓰기와 공백을 정확히 보존합니다.
+    delay_ms: 각 청크 사이의 지연 시간 (밀리초)
     """
-    # 단어와 공백/줄바꿈을 모두 유지하면서 분할
-    tokens = re.findall(r'\S+|\s+', text)
+    import time
     
-    for i in range(0, len(tokens), chunk_size):
-        chunk = ''.join(tokens[i:i + chunk_size])
-        # 줄바꿈이 있는 경우 data: \n으로 출력
-        if '\n' in chunk:
-            # 줄바꿈을 포함한 청크를 처리
-            parts = chunk.split('\n')
-            for j, part in enumerate(parts):
-                if j > 0:  # 첫 번째가 아닌 경우 줄바꿈 먼저 출력
-                    yield "data: \\n\n\n"
-                if part.strip():  # 빈 문자열이 아닌 경우만 출력
-                    yield f"data: {part}\n\n"
+    # 코드 블록 내부인지 추적하는 변수
+    in_code_block = False
+    lines = text.split('\n')
+    
+    for line_idx, line in enumerate(lines):
+        # 코드 블록 시작/종료 감지
+        if line.strip().startswith('```'):
+            in_code_block = not in_code_block
+            yield f"data: {line}\n\n"
+            if line_idx < len(lines) - 1:  # 마지막 라인이 아니면 줄바꿈 추가
+                yield "data: \\n\n\n"
+            if delay_ms > 0:
+                time.sleep(delay_ms / 1000.0)
+            continue
+        
+        if in_code_block:
+            # 코드 블록 내부: 전체 라인을 한 번에 전송 (들여쓰기 보존)
+            if line:  # 빈 라인이 아닌 경우
+                yield f"data: {line}\n\n"
+            else:  # 빈 라인인 경우
+                yield "data: \n\n"
+            
+            if line_idx < len(lines) - 1:  # 마지막 라인이 아니면 줄바꿈 추가
+                yield "data: \\n\n\n"
+            if delay_ms > 0:
+                time.sleep(delay_ms / 1000.0)
         else:
-            yield f"data: {chunk}\n\n"
+            # 일반 텍스트: 기존 방식대로 단어 단위 분할
+            if not line.strip():  # 빈 라인
+                yield "data: \n\n"
+                if line_idx < len(lines) - 1:
+                    yield "data: \\n\n\n"
+                if delay_ms > 0:
+                    time.sleep(delay_ms / 1000.0)
+                continue
+            
+            # 단어와 공백을 분리하여 처리
+            tokens = re.findall(r'\S+|\s+', line)
+            
+            for i in range(0, len(tokens), chunk_size):
+                chunk = ''.join(tokens[i:i + chunk_size])
+                yield f"data: {chunk}\n\n"
+                if delay_ms > 0:
+                    time.sleep(delay_ms / 1000.0)
+            
+            # 라인 끝에 줄바꿈 추가 (마지막 라인이 아닌 경우)
+            if line_idx < len(lines) - 1:
+                yield "data: \\n\n\n"
+                if delay_ms > 0:
+                    time.sleep(delay_ms / 1000.0)
 
 # --- 결정자 에이전트 기반 검증 및 반려 사유 생성 ---
 def llm_validate_response(new_response: str, prev_responses: Optional[List[str]], user_request: str) -> Tuple[bool, str]:
@@ -84,18 +123,33 @@ def llm_validate_response(new_response: str, prev_responses: Optional[List[str]]
     LLM을 이용해 새 응답이 이전 응답들과 너무 유사하거나, 사용자 요청과 동떨어진지 판단.
     검증 실패 시 반려 사유를 동적으로 생성.
     """
-    prev_text = "\n---\n".join(prev_responses) if prev_responses else "(없음)"
+    # 이전 응답이 없으면 바로 통과 (첫 번째 시도)
+    if not prev_responses:
+        logger.debug(f"[LLM_VALIDATION] 이전 응답 없음 - 바로 통과")
+        return True, ""
+    
+    prev_text = "\\n---\\n".join(prev_responses) if prev_responses else "(없음)"
     prompt = f"""
-다음은 새로 생성된 응답입니다:
+다음은 새로 생성된 개선된 코드 응답입니다:
 {new_response}
 
-이전 응답들:
+이전 생성된 응답들:
 {prev_text}
 
-사용자 요청:
+사용자 요청 (문제와 피드백):
 {user_request}
 
-위 새 응답이 이전 응답들과 너무 유사하거나, 사용자 요청과 동떨어진 동문서답이라면 '반려'로 판단하고, 그 이유를 한 문장으로 설명해줘. 적합하다면 '통과'라고만 답해줘.
+위 새 응답을 평가해주세요:
+
+1. 이전 응답들과 거의 동일하거나 매우 유사한가?
+2. 문제의 입출력 조건을 완전히 무시하고 엉뚱한 코드를 제공하는가?  
+3. 앞서 제시된 "개선할 점"을 전혀 반영하지 않은 코드인가?
+4. 문제 해결과 전혀 관련 없는 일반적인 코드나 예시를 제공하는가?
+
+위 4가지 중 하나라도 해당한다면 다음 형식으로 답하세요:
+"반료: 문제의 입출력 조건에 맞지 않는 코드를 생성했습니다" (구체적 이유)
+
+문제를 정확히 해결하고 피드백을 반영한 적절한 코드라면 "통과"라고만 답하세요.
 """
     
     logger.debug(f"[LLM_VALIDATION] 검증 프롬프트 생성 - 길이: {len(prompt)} chars")
@@ -111,12 +165,19 @@ def llm_validate_response(new_response: str, prev_responses: Optional[List[str]]
         
         logger.debug(f"[LLM_VALIDATION] 검증 결과: '{judge}'")
         
-        if judge == "통과":
+        # "통과" 또는 "PASS" 등으로 시작하면 통과
+        if judge.lower().startswith("통과") or judge.lower().startswith("pass"):
             logger.info(f"[LLM_VALIDATION] 응답 검증 성공 - 품질 기준 충족")
             return True, ""
+        elif judge.lower().startswith("반료"):
+            # "반료: 이유" 형태에서 이유 부분 추출
+            reason = judge.split(":", 1)[1].strip() if ":" in judge else judge
+            logger.warning(f"[LLM_VALIDATION] 응답 검증 실패 - 사유: {reason}")
+            return False, reason
         else:
-            logger.warning(f"[LLM_VALIDATION] 응답 검증 실패 - 사유: {judge}")
-            return False, judge
+            # 모호한 답변의 경우 반료 처리
+            logger.warning(f"[LLM_VALIDATION] 모호한 검증 결과 - 반료 처리: {judge}")
+            return False, f"검증 결과가 모호함: {judge}"
             
     except Exception as e:
         logger.error(f"[LLM_VALIDATION] 검증 중 오류 발생: {str(e)} - 기본 통과 처리")
@@ -194,8 +255,8 @@ async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: Opt
         
         if stream:
             logger.info(f"[INTERVIEW_AGENT] 스트리밍 모드 - SSE 변환 시작")
-            # SSE 형태로 단어 단위 청킹하여 Generator 반환
-            return text_to_sse(full_text, chunk_size=1)
+            # SSE 형태로 단어 단위 청킹하여 Generator 반환 (50ms 지연)
+            return text_to_sse(full_text, chunk_size=1, delay_ms=50)
         else:
             logger.info(f"[INTERVIEW_AGENT] 일반 모드 - 전체 텍스트 반환 ({len(full_text)} chars)")
             # 전체 텍스트 그대로 반환
@@ -205,19 +266,19 @@ async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: Opt
         raise RuntimeError("인터뷰 에이전트 응답 생성 실패") from e
 
 @traceable(run_type="chain", name="feedback_agent_call", tags=["feedback", "chatbot"])
-async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Optional[int] = None, session_id: Optional[str] = None, endpoint: str = "feedback-answer"):
+async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Optional[int] = None, session_id: Optional[str] = None, endpoint: str = "feedback-answer", prev_responses: Optional[List[str]] = None):
     """
     피드백 에이전트 호출 - stream 여부에 따라 응답 형태 선택
     """
     logger.info(f"[FEEDBACK_AGENT] 호출 시작 - endpoint: {endpoint}, session: {session_id}, stream: {stream}")
     
     try:
-        full_text = call_llm(prompt, prev_responses=None, user_request=prompt)
+        full_text = call_llm(prompt, prev_responses=prev_responses, user_request=prompt)
         
         if stream:
             logger.info(f"[FEEDBACK_AGENT] 스트리밍 모드 - SSE 변환 시작")
-            # SSE 형태로 단어 단위 청킹하여 Generator 반환
-            return text_to_sse(full_text, chunk_size=1)
+            # SSE 형태로 단어 단위 청킹하여 Generator 반환 (50ms 지연)
+            return text_to_sse(full_text, chunk_size=1, delay_ms=50)
         else:
             logger.info(f"[FEEDBACK_AGENT] 일반 모드 - 전체 텍스트 반환 ({len(full_text)} chars)")
             # 전체 텍스트 그대로 반환
@@ -227,16 +288,16 @@ async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Opti
         raise RuntimeError("Feedback 응답 생성 중 오류 발생") from e
 
 def build_summary_messages(req: SummaryRequest) -> str:
-    messages_str = "\n".join(f"{m.role}: {m.content}" for m in req.messages)
+    messages_str = "\\n".join(f"{m.role}: {m.content}" for m in req.messages)
     system_prompt = (
-        "당신은 문제 정보와 대화 목록을 요약하는 AI입니다.\n"
-        "- 문제 요약과 대화 요약을 구분하여 하나의 긴 텍스트로 출력하세요.\n"
-        "- 각 항목에는 반드시 요약된 발화 내용이 포함되어야 합니다.\n"
+        "당신은 문제 정보와 대화 목록을 요약하는 AI입니다.\\n"
+        "- 문제 요약과 대화 요약을 구분하여 하나의 긴 텍스트로 출력하세요.\\n"
+        "- 각 항목에는 반드시 요약된 발화 내용이 포함되어야 합니다.\\n"
         f"- 문제 정보는 최대 {getattr(settings, 'max_summary_sentences_problem', 3)}문장, "
-        f"대화 요약은 최대 {getattr(settings, 'max_summary_sentences_chat', 5)}문장으로 정리하세요.\n"
+        f"대화 요약은 최대 {getattr(settings, 'max_summary_sentences_chat', 5)}문장으로 정리하세요.\\n"
         "- 두 영역은 명확히 구분되며, 통합 텍스트로 구성되어야 합니다."
     )
-    return f"{system_prompt}\n\n다음은 문제 설명과 사용자/AI 간의 대화입니다:\n{messages_str}"
+    return f"{system_prompt}\\n\\n다음은 문제 설명과 사용자/AI 간의 대화입니다:\\n{messages_str}"
 
 @traceable(run_type="chain", name="summary_generation", tags=["summary", "chatbot"])
 async def generate_summary(req: SummaryRequest) -> SummaryResponse:

@@ -82,19 +82,69 @@ def feedback_start_bad_points(req: FeedbackRequest) -> str:
     feedback/start 에서 '개선할 점' 에이전트를 위한 프롬프트
     """
     return f"""
-위에서 설명된 문제와 사용자의 코드를 참고하여,
+문제 번호: {req.problemNumber}
+제목: {req.title}
+
+문제 설명:
+{req.description}
+
+입력 조건:
+{req.inputDescription}
+
+출력 조건:
+{req.outputDescription}
+
+입/출력 예시:
+입력: {req.inputExample}
+출력: {req.outputExample}
+
+사용자 제출 코드 ({req.codeLanguage}):
+```
+{req.code}
+```
+
+위 문제와 사용자의 코드를 참고하여,
 
 ## 개선할 점 3가지를 구체적으로, 그리고 왜 그렇게 생각하는지 간단한 이유를 함께 설명해줘.
 """.strip()
 
 
-def feedback_start_fix_code(req: FeedbackRequest) -> str:
+def feedback_start_fix_code(req: FeedbackRequest, good_points: str = "", bad_points: str = "") -> str:
     """
     feedback/start 에서 '개선된 코드' 에이전트를 위한 프롬프트
+    이전 에이전트들의 피드백을 참고하여 개선된 코드 생성
     """
     return f"""
-위 피드백을 반영하여, 동일한 언어({req.codeLanguage})로 동작이 보장되는
-개선된 코드를 전체 구현해줘. 코드 블록만 출력해줘.
+문제 번호: {req.problemNumber}
+제목: {req.title}
+
+문제 설명:
+{req.description}
+
+입력 조건:
+{req.inputDescription}
+
+출력 조건:
+{req.outputDescription}
+
+입/출력 예시:
+입력: {req.inputExample}
+출력: {req.outputExample}
+
+사용자 제출 코드 ({req.codeLanguage}):
+```
+{req.code}
+```
+
+잘한 점:
+{good_points}
+
+개선할 점:
+{bad_points}
+
+위 피드백을 반영하여, 문제를 정확히 해결하는 동일한 언어({req.codeLanguage})로 개선된 코드를 전체 구현해줘. 
+반드시 문제의 입출력 조건을 만족하고, 개선할 점에서 지적된 사항들을 해결한 코드를 작성해줘.
+코드 블록만 출력해줘.
 """.strip()
 
 
