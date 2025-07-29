@@ -1,3 +1,4 @@
+"""
 from vllm import SamplingParams, AsyncEngineArgs, AsyncLLMEngine
 from transformers import AutoTokenizer
 
@@ -22,3 +23,4 @@ sampling_params = SamplingParams(
     max_tokens=1024,           # 제한 토큰 수
     stop=["</s>"]              # 이 토큰이 생성되면 답변 중단
 )
+"""
