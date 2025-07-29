@@ -13,13 +13,13 @@ if "solar" in settings.model_chat.lower():
         generate_summary,
     )
 elif "Qwen" in settings.model_chat.lower():
-    from src.adapters.llm_client_v3 import (
+    from src.adapters.llm_client_v2 import (
         call_interview_agent,
         call_feedback_agent,
         generate_summary,
     )
 elif "gpt" in settings.model_chat.lower() or "chatgpt" in settings.model_chat.lower():
-    from src.adapters.llm_client_v4 import (
+    from src.adapters.llm_client_v2 import (
         call_interview_agent,
         call_feedback_agent,
         generate_summary,

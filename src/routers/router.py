@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from src.routers.v1.solution_router import router as solution_router_v1
 from src.routers.v2.solution_router_v2 import router as solution_router_v2
-from src.routers.v2.chatbot_router import router as chatbot_router_v2
+from src.routers.v2.chatbot_router_v2 import router as chatbot_router_v2
 
 router = APIRouter()
 
