@@ -1,43 +1,43 @@
-name: Deploy via SSM
+# name: Deploy via SSM
 
-on:
-  push:
-    branches:
-      - fix/76-apitest
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - fix/76-apitest
+#   workflow_dispatch:
 
-jobs:
-  deploy-to-ec2:
-    name: Deploy to EC2 via SSM
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy-to-ec2:
+#     name: Deploy to EC2 via SSM
+#     runs-on: ubuntu-latest
 
-    steps:
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+#     steps:
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v2
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Deploy via SSM
-      run: |
-        aws ssm send-command \
-          --document-name "AWS-RunShellScript" \
-          --comment "Deploy chatbot via SSM" \
-          --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-          --region "${{ secrets.AWS_REGION }}" \
-          --parameters 'commands=[
-            "sudo apt update",
-            "sudo apt install -y docker.io",
-            "until command -v docker; do echo Waiting for docker...; sleep 2; done",
-            "sudo systemctl enable docker",
-            "sudo systemctl start docker",
-            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)",
-            "sudo docker stop chatbot-api || true",
-            "sudo docker rm chatbot-api || true",
-            "sudo docker pull ${{ secrets.ECR_REPOSITORY }}:latest",
-            "sudo docker run -d -p 8000:8000 --name chatbot-api ${{ secrets.ECR_REPOSITORY }}:latest",
-            "sudo docker ps -a",
-            "sudo docker logs $(sudo docker ps -a -q --filter name=chatbot-api --limit 1)"
-            ]'\
-          --output text
+#     - name: Deploy via SSM
+#       run: |
+#         aws ssm send-command \
+#           --document-name "AWS-RunShellScript" \
+#           --comment "Deploy chatbot via SSM" \
+#           --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+#           --region "${{ secrets.AWS_REGION }}" \
+#           --parameters 'commands=[
+#             "sudo apt update",
+#             "sudo apt install -y docker.io",
+#             "until command -v docker; do echo Waiting for docker...; sleep 2; done",
+#             "sudo systemctl enable docker",
+#             "sudo systemctl start docker",
+#             "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin $(echo ${{ secrets.ECR_REPOSITORY }} | cut -d'/' -f1)",
+#             "sudo docker stop chatbot-api || true",
+#             "sudo docker rm chatbot-api || true",
+#             "sudo docker pull ${{ secrets.ECR_REPOSITORY }}:latest",
+#             "sudo docker run -d -p 8000:8000 --name chatbot-api ${{ secrets.ECR_REPOSITORY }}:latest",
+#             "sudo docker ps -a",
+#             "sudo docker logs $(sudo docker ps -a -q --filter name=chatbot-api --limit 1)"
+#             ]'\
+#           --output text
