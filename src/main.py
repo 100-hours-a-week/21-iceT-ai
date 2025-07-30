@@ -1,8 +1,12 @@
 import uvicorn
 from fastapi import FastAPI
+from dotenv import load_dotenv
 from src.core.logger import setup_logging
 from src.core.exception_handlers import add_exception_handlers
 from src.routers.router import router
+
+# 환경변수 로드 (최우선)
+load_dotenv()
 
 # 로깅 설정 초기화
 setup_logging()

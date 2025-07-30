@@ -149,7 +149,7 @@ def clear_original_request(session_id: str) -> None:
 
 class ChatbotService:
     # --- Feedback ---
-    # @traceable 데코레이터 제거 또는 수정
+    @traceable(run_type="chain", name="start_feedback", tags=["feedback", "multi-agent"])
     async def start_feedback(self, req: FeedbackRequest) -> AsyncGenerator[str, None]:
         """
         feedback/start: 잘한 점, 개선할 점, 개선된 코드를
@@ -210,7 +210,7 @@ class ChatbotService:
         
         logger.debug(f"[MULTI_AGENT] Session {session_id}: 스트리밍 완료 ({chunk_count}개 청크)")
 
-    # @traceable 데코레이터 제거 또는 수정  
+    @traceable(run_type="chain", name="followup_feedback", tags=["feedback", "followup"])
     async def followup_feedback(self, req: FeedbackfollowRequest) -> AsyncGenerator[str, None]:
         """
         feedback/answer: 후속 요청에 대해
@@ -252,7 +252,7 @@ class ChatbotService:
                 yield chunk
 
     # --- Interview ---
-    # @traceable 데코레이터 제거 또는 수정
+    @traceable(run_type="chain", name="start_interview", tags=["interview", "start"])
     async def start_interview(self, req: InterviewStartRequest) -> AsyncGenerator[str, None]:
         """
         1) 문제 정보 + 사용자 코드로 질문 셋 생성
@@ -314,7 +314,7 @@ class ChatbotService:
         
         logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 첫 번째 질문 스트리밍 완료 ({chunk_count}개 청크)")
 
-    # @traceable 데코레이터 제거 또는 수정
+    @traceable(run_type="chain", name="followup_interview", tags=["interview", "followup"])
     async def followup_interview(self, req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
         """
         interview/answer: 

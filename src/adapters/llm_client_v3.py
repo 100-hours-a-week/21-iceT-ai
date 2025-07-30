@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from typing import Generator, List, Optional, Tuple
 from dotenv import load_dotenv
 from langsmith import traceable
@@ -334,37 +335,3 @@ def track_llm_call_metadata(prompt_length: int, prev_count: int, endpoint: str) 
         "prev_responses_count": prev_count,
         "endpoint": endpoint
     }
-
-def build_summary_messages(req: SummaryRequest) -> str:
-    messages_str = "\\n".join(f"{m.role}: {m.content}" for m in req.messages)
-    system_prompt = (
-        "당신은 문제 정보와 대화 목록을 요약하는 AI입니다.\\n"
-        "- 문제 요약과 대화 요약을 구분하여 하나의 긴 텍스트로 출력하세요.\\n"
-        "- 각 항목에는 반드시 요약된 발화 내용이 포함되어야 합니다.\\n"
-        f"- 문제 정보는 최대 {getattr(settings, 'max_summary_sentences_problem', 3)}문장, "
-        f"대화 요약은 최대 {getattr(settings, 'max_summary_sentences_chat', 5)}문장으로 정리하세요.\\n"
-        "- 두 영역은 명확히 구분되며, 통합 텍스트로 구성되어야 합니다."
-    )
-    return f"{system_prompt}\\n\\n다음은 문제 설명과 사용자/AI 간의 대화입니다:\\n{messages_str}"
-
-@traceable(run_type="chain", name="summary_generation", tags=["summary", "chatbot"])
-async def generate_summary(req: SummaryRequest) -> SummaryResponse:
-    """요약 생성"""
-    session_id = req.sessionId
-    logger.info(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 시작 - {len(req.messages)}개 메시지")
-    
-    try:
-        prompt = build_summary_messages(req)
-        logger.debug(f"[SUMMARY_AGENT] Session {session_id}: 요약 프롬프트 생성 완료 ({len(prompt)} chars)")
-        
-        summary_text = call_llm(prompt, prev_responses=None, user_request="요약 생성")
-        
-        logger.info(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 완료 ({len(summary_text)} chars)")
-        
-        return SummaryResponse(
-            sessionId=req.sessionId,
-            summary=summary_text.strip()
-        )
-    except Exception as e:
-        logger.error(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 실패 - {str(e)}", exc_info=True)
-        raise RuntimeError("대화 요약 중 오류가 발생했습니다.") from e
