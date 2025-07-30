@@ -198,7 +198,7 @@ def call_llm(prompt: str, prev_responses: Optional[List[str]] = None, user_reque
     """
     Non-streaming 호출: 전체 응답을 한 번에 받아옵니다.
     결정자 에이전트(LLM)로 이전 응답들과 비교 및 동문서답 여부 판단.
-    검증 실패 시 반료 사유를 생성하여 재생성 프롬프트로 재시도.
+    검증 실패 시 반려 사유를 생성하여 재생성 프롬프트로 재시도.
     """
     max_retry = 3
     last_result = ""
@@ -243,7 +243,6 @@ def call_llm(prompt: str, prev_responses: Optional[List[str]] = None, user_reque
     return last_result
 
 # --- 인터뷰/피드백/요약 함수들 ---
-@traceable(run_type="chain", name="interview_agent_call", tags=["interview", "chatbot"])
 async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: Optional[int] = None, session_id: Optional[str] = None, endpoint: str = "interview-answer"):
     """
     인터뷰 에이전트 호출 - stream 여부에 따라 응답 형태 선택
@@ -255,8 +254,11 @@ async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: Opt
         
         if stream:
             logger.info(f"[INTERVIEW_AGENT] 스트리밍 모드 - SSE 변환 시작")
-            # SSE 형태로 단어 단위 청킹하여 Generator 반환 (50ms 지연)
-            return text_to_sse(full_text, chunk_size=1, delay_ms=50)
+            # SSE 형태로 단어 단위 청킹하여 AsyncGenerator 반환 (50ms 지연)
+            async def stream_generator():
+                for chunk in text_to_sse(full_text, chunk_size=1, delay_ms=50):
+                    yield chunk
+            return stream_generator()
         else:
             logger.info(f"[INTERVIEW_AGENT] 일반 모드 - 전체 텍스트 반환 ({len(full_text)} chars)")
             # 전체 텍스트 그대로 반환
@@ -265,7 +267,6 @@ async def call_interview_agent(prompt: str, stream: bool = True, max_tokens: Opt
         logger.error(f"[INTERVIEW_AGENT] 호출 실패 - endpoint: {endpoint}, 오류: {str(e)}", exc_info=True)
         raise RuntimeError("인터뷰 에이전트 응답 생성 실패") from e
 
-@traceable(run_type="chain", name="feedback_agent_call", tags=["feedback", "chatbot"])
 async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Optional[int] = None, session_id: Optional[str] = None, endpoint: str = "feedback-answer", prev_responses: Optional[List[str]] = None):
     """
     피드백 에이전트 호출 - stream 여부에 따라 응답 형태 선택
@@ -277,8 +278,11 @@ async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Opti
         
         if stream:
             logger.info(f"[FEEDBACK_AGENT] 스트리밍 모드 - SSE 변환 시작")
-            # SSE 형태로 단어 단위 청킹하여 Generator 반환 (50ms 지연)
-            return text_to_sse(full_text, chunk_size=1, delay_ms=50)
+            # SSE 형태로 단어 단위 청킹하여 AsyncGenerator 반환 (50ms 지연)
+            async def stream_generator():
+                for chunk in text_to_sse(full_text, chunk_size=1, delay_ms=50):
+                    yield chunk
+            return stream_generator()
         else:
             logger.info(f"[FEEDBACK_AGENT] 일반 모드 - 전체 텍스트 반환 ({len(full_text)} chars)")
             # 전체 텍스트 그대로 반환
@@ -286,6 +290,50 @@ async def call_feedback_agent(prompt: str, stream: bool = True, max_tokens: Opti
     except Exception as e:
         logger.error(f"[FEEDBACK_AGENT] 호출 실패 - endpoint: {endpoint}, 오류: {str(e)}", exc_info=True)
         raise RuntimeError("Feedback 응답 생성 중 오류 발생") from e
+
+def build_summary_messages(req: SummaryRequest) -> str:
+    messages_str = "\\n".join(f"{m.role}: {m.content}" for m in req.messages)
+    system_prompt = (
+        "당신은 문제 정보와 대화 목록을 요약하는 AI입니다.\\n"
+        "- 문제 요약과 대화 요약을 구분하여 하나의 긴 텍스트로 출력하세요.\\n"
+        "- 각 항목에는 반드시 요약된 발화 내용이 포함되어야 합니다.\\n"
+        f"- 문제 정보는 최대 {getattr(settings, 'max_summary_sentences_problem', 3)}문장, "
+        f"대화 요약은 최대 {getattr(settings, 'max_summary_sentences_chat', 5)}문장으로 정리하세요.\\n"
+        "- 두 영역은 명확히 구분되며, 통합 텍스트로 구성되어야 합니다."
+    )
+    return f"{system_prompt}\\n\\n다음은 문제 설명과 사용자/AI 간의 대화입니다:\\n{messages_str}"
+
+@traceable(run_type="chain", name="summary_generation", tags=["summary", "chatbot"])
+async def generate_summary(req: SummaryRequest) -> SummaryResponse:
+    """요약 생성"""
+    session_id = req.sessionId
+    logger.info(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 시작 - {len(req.messages)}개 메시지")
+    
+    try:
+        prompt = build_summary_messages(req)
+        logger.debug(f"[SUMMARY_AGENT] Session {session_id}: 요약 프롬프트 생성 완료 ({len(prompt)} chars)")
+        
+        summary_text = call_llm(prompt, prev_responses=None, user_request="요약 생성")
+        
+        logger.info(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 완료 ({len(summary_text)} chars)")
+        
+        return SummaryResponse(
+            sessionId=req.sessionId,
+            summary=summary_text.strip()
+        )
+    except Exception as e:
+        logger.error(f"[SUMMARY_AGENT] Session {session_id}: 요약 생성 실패 - {str(e)}", exc_info=True)
+        raise RuntimeError("대화 요약 중 오류가 발생했습니다.") from e
+
+# 추적 가능한 래퍼 함수
+@traceable(run_type="llm", name="llm_call_metadata", tags=["llm", "validation"])
+def track_llm_call_metadata(prompt_length: int, prev_count: int, endpoint: str) -> dict:
+    """LLM 호출 메타데이터만 추적"""
+    return {
+        "prompt_length": prompt_length,
+        "prev_responses_count": prev_count,
+        "endpoint": endpoint
+    }
 
 def build_summary_messages(req: SummaryRequest) -> str:
     messages_str = "\\n".join(f"{m.role}: {m.content}" for m in req.messages)

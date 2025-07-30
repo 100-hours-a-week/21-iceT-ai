@@ -69,11 +69,12 @@ def feedback_start_good_points(req: FeedbackRequest) -> str:
 출력: {req.outputExample}
 
 사용자 제출 코드 ({req.codeLanguage}):
-```
+```{req.codeLanguage.lower()}
 {req.code}
 ```
 
-## 잘한 점 3가지를 간결하게 알려줘.
+위 코드의 잘한 점 3가지를 구체적으로 분석해주세요.
+마크다운 형식이나 특별한 서식 없이 본문만 작성해주세요.
 """.strip()
 
 
@@ -99,13 +100,12 @@ def feedback_start_bad_points(req: FeedbackRequest) -> str:
 출력: {req.outputExample}
 
 사용자 제출 코드 ({req.codeLanguage}):
-```
+```{req.codeLanguage.lower()}
 {req.code}
 ```
 
-위 문제와 사용자의 코드를 참고하여,
-
-## 개선할 점 3가지를 구체적으로, 그리고 왜 그렇게 생각하는지 간단한 이유를 함께 설명해줘.
+위 코드의 개선할 점 3가지를 구체적으로 분석하고, 왜 그렇게 생각하는지 간단한 이유를 함께 설명해주세요.
+마크다운 형식이나 특별한 서식 없이 본문만 작성해주세요.
 """.strip()
 
 
@@ -192,12 +192,19 @@ def generate_question_set_prompt(req: InterviewStartRequest, count: int = 5) -> 
 {req.description}
 
 사용자 코드 ({req.codeLanguage}):
-```
+```{req.codeLanguage.lower()}
 {req.code}
 ```
 
-→ 위 내용을 바탕으로, 다음 5가지 평가 축(문제 이해, 알고리즘 선택, 코드 품질, 테스트 설계, 커뮤니케이션)을
+위 내용을 바탕으로, 다음 5가지 평가 축(문제 이해, 알고리즘 선택, 코드 품질, 테스트 설계, 커뮤니케이션)을
 고루 다루는 핵심 인터뷰 질문 {count}개를 Markdown 순서 목록(1.~{count}.) 형태로 출력해주세요.
+
+질문 앞에 "추가 질문:", "질문:" 등의 접두사를 붙이지 마세요.
+예시:
+1. 이 문제의 핵심은 무엇이라고 생각하시나요?
+2. 왜 이 알고리즘을 선택하셨나요?
+
+반드시 위 형식을 따라 {count}개의 질문만 생성해주세요.
 """.strip()
 
 
@@ -211,7 +218,11 @@ def followup_prompt(prev_q: str, user_resp: str) -> str:
 질문: {prev_q}
 응답: {user_resp}
 
-→ 이 답변을 바탕으로 더 깊이 탐색할 후속 질문 한 개만 출력해주세요.
+이 답변을 바탕으로 더 깊이 탐색할 후속 질문 한 개만 생성해주세요.
+질문 앞에 "추가 질문:", "질문:" 등의 접두사를 붙이지 말고, 자연스럽게 질문만 작성해주세요.
+
+예시:
+그렇다면 입력 크기가 매우 클 때는 어떻게 최적화하시겠습니까?
 """.strip()
 
 
@@ -228,7 +239,108 @@ def finish_prompt(context: str, question_bank: list[str]) -> str:
 [남은 주요 질문 개수]
 {len(question_bank)}
 
-→ 남은 주요 질문이 없고, 충분히 평가가 이루어졌으면 True, 아니면 False만 출력하세요.
+남은 주요 질문이 없고, 충분히 평가가 이루어졌으면 "true", 아니면 "false"만 출력하세요.
+""".strip()
+
+
+def interview_evaluation_good_points(req: InterviewStartRequest, messages: list) -> str:
+    """
+    인터뷰 총평 - 잘한 점 생성 프롬프트
+    """
+    convo = "\n".join(f"{m.role}: {m.content}" for m in messages)
+    return f"""
+문제 번호: {req.problemNumber}
+문제 제목: {req.title}
+문제 설명: {req.description}
+
+사용자 제출 코드 ({req.codeLanguage}):
+```{req.codeLanguage.lower()}
+{req.code}
+```
+
+전체 인터뷰 대화:
+{convo}
+
+위 인터뷰 과정에서 면접자가 보여준 **잘한 점**들을 분석해주세요.
+
+다음 관점에서 평가해주세요:
+- 문제 이해도 및 접근 방식
+- 알고리즘 지식과 활용 능력
+- 코드 품질과 구현 능력
+- 커뮤니케이션 스킬
+- 추가적인 개선 의지나 학습 태도
+
+구체적이고 건설적인 피드백으로 작성해주세요.
+마크다운 형식이나 특별한 서식 없이 본문만 작성해주세요.
+""".strip()
+
+
+def interview_evaluation_bad_points(req: InterviewStartRequest, messages: list) -> str:
+    """
+    인터뷰 총평 - 개선할 점 생성 프롬프트
+    """
+    convo = "\n".join(f"{m.role}: {m.content}" for m in messages)
+    return f"""
+문제 번호: {req.problemNumber}
+문제 제목: {req.title}
+문제 설명: {req.description}
+
+사용자 제출 코드 ({req.codeLanguage}):
+```{req.codeLanguage.lower()}
+{req.code}
+```
+
+전체 인터뷰 대화:
+{convo}
+
+위 인터뷰 과정에서 면접자가 **개선해야 할 점**들을 분석해주세요.
+
+다음 관점에서 평가해주세요:
+- 문제 분석 과정에서의 놓친 부분
+- 알고리즘 선택이나 최적화 측면
+- 코드 품질이나 가독성 측면
+- 설명 방식이나 커뮤니케이션 측면
+- 추가 학습이 필요한 영역
+
+건설적이고 구체적인 개선 방향을 제시해주세요.
+마크다운 형식이나 특별한 서식 없이 본문만 작성해주세요.
+""".strip()
+
+
+def interview_evaluation_recommendations(req: InterviewStartRequest, messages: list, good_points: str, bad_points: str) -> str:
+    """
+    인터뷰 총평 - 학습 추천사항 생성 프롬프트
+    """
+    convo = "\n".join(f"{m.role}: {m.content}" for m in messages)
+    return f"""
+문제 번호: {req.problemNumber}
+문제 제목: {req.title}
+문제 설명: {req.description}
+
+사용자 제출 코드 ({req.codeLanguage}):
+```{req.codeLanguage.lower()}
+{req.code}
+```
+
+전체 인터뷰 대화:
+{convo}
+
+잘한 점:
+{good_points}
+
+개선할 점:
+{bad_points}
+
+위 분석을 바탕으로 면접자에게 **구체적인 학습 추천사항**을 제시해주세요.
+
+다음을 포함해주세요:
+- 우선 학습해야 할 알고리즘/자료구조
+- 추천 학습 리소스나 문제 유형
+- 실력 향상을 위한 구체적인 방법
+- 다음 단계 목표 설정
+
+실용적이고 실행 가능한 조언으로 작성해주세요.
+마크다운 형식이나 특별한 서식 없이 본문만 작성해주세요.
 """.strip()
 
 
@@ -237,6 +349,7 @@ def evaluation_prompt(context: str, code: str, messages: list) -> str:
     """
     인터뷰 종료 시 호출.
     문제 설명·사용자 코드·전체 대화를 종합해 Markdown 형식의 면접 총평 생성.
+    (기존 버전 - 호환성 유지용)
     """
     convo = "\n".join(f"{m.role}: {m.content}" for m in messages)
     return f"""
@@ -246,7 +359,7 @@ def evaluation_prompt(context: str, code: str, messages: list) -> str:
 전체 대화 맥락:
 {convo}
 
-→ 위 내용을 종합해, Markdown으로 된 "## 📝 면접 총평"을 생성해주세요.
+위 내용을 종합해, Markdown으로 된 "## 📝 면접 총평"을 생성해주세요.
 (세부 항목: 문제 이해, 알고리즘 선택, 코드 품질, 테스트 설계, 커뮤니케이션)
 """.strip()
 

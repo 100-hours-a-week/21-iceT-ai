@@ -1,10 +1,11 @@
 # src/service/chatbot_service_v3.py
 
-from typing import Generator, List, Dict, AsyncGenerator
+from typing import Generator, List, Dict, AsyncGenerator, Optional
 import re
 import threading
 import asyncio
 import logging
+import httpx
 from langsmith import traceable
 from src.adapters.llm_client_v3 import (
     call_feedback_agent, 
@@ -22,21 +23,45 @@ from src.core.prompt_templates_v3 import (
     followup_prompt,
     finish_prompt,
     evaluation_prompt,
-    should_continue_followup_prompt
+    should_continue_followup_prompt,
+    interview_evaluation_good_points,
+    interview_evaluation_bad_points,
+    interview_evaluation_recommendations
 )
 from src.schemas.chatbot_schema import (
     FeedbackRequest, FeedbackfollowRequest,
     InterviewStartRequest, InterviewfollowRequest,
     SummaryRequest, SummaryResponse
 )
+from src.config import BACKEND_INTERVIEW_URL
 
 # 세션ID별 질문 뱅크 저장 (모듈 레벨)
 _question_banks: Dict[str, List[str]] = {}
 # 세션ID별 이전 응답 저장 (재생성 로직용)
 _session_responses: Dict[str, List[str]] = {}
+# 세션ID별 원본 요청 저장 (총평 생성용)
+_session_requests: Dict[str, InterviewStartRequest] = {}
 _lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
+
+async def notify_interview_end(session_id: int, finished: bool):
+    """인터뷰 종료 상태를 백엔드에 알리는 함수"""
+    try:
+        if not BACKEND_INTERVIEW_URL:
+            logger.warning("[notify_interview_end] BACKEND_INTERVIEW_URL이 설정되지 않음")
+            return
+            
+        print(f"[notify_interview_end] finished: {finished}")  # finished 상태 출력
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                BACKEND_INTERVIEW_URL,
+                json={"sessionId": session_id, "finished": finished},
+            )
+            if response.status_code != 200:
+                logger.warning(f"[notify_interview_end] 상태코드 {response.status_code}: {response.text}")
+    except Exception as e:
+        logger.warning(f"[notify_interview_end] 호출 실패: {e}")
 
 def save_question_bank(session_id: str, questions: List[str]) -> None:
     """session_id에 대응되는 question bank를 저장합니다."""
@@ -102,9 +127,29 @@ def clear_session_responses(session_id: str) -> None:
         else:
             logger.warning(f"[SESSION_RESPONSES] Session {session_id}: 정리할 응답 히스토리가 없음")
 
+def save_original_request(session_id: str, req: InterviewStartRequest) -> None:
+    """인터뷰 시작 시 원본 요청을 저장"""
+    with _lock:
+        _session_requests[session_id] = req
+        logger.debug(f"[SESSION_REQUEST] Session {session_id}: 원본 요청 저장 완료")
+
+def get_original_request(session_id: str) -> Optional[InterviewStartRequest]:
+    """저장된 원본 요청 반환"""
+    with _lock:
+        return _session_requests.get(session_id)
+
+def clear_original_request(session_id: str) -> None:
+    """원본 요청 정리"""
+    with _lock:
+        removed_req = _session_requests.pop(session_id, None)
+        if removed_req:
+            logger.debug(f"[SESSION_REQUEST] Session {session_id}: 원본 요청 정리 완료")
+        else:
+            logger.warning(f"[SESSION_REQUEST] Session {session_id}: 정리할 원본 요청이 없음")
+
 class ChatbotService:
     # --- Feedback ---
-    @traceable(run_type="chain", name="feedback_start_endpoint", tags=["feedback", "start", "multi-agent"])
+    # @traceable 데코레이터 제거 또는 수정
     async def start_feedback(self, req: FeedbackRequest) -> AsyncGenerator[str, None]:
         """
         feedback/start: 잘한 점, 개선할 점, 개선된 코드를
@@ -165,31 +210,49 @@ class ChatbotService:
         
         logger.debug(f"[MULTI_AGENT] Session {session_id}: 스트리밍 완료 ({chunk_count}개 청크)")
 
-    @traceable(run_type="chain", name="feedback_followup_endpoint", tags=["feedback", "followup"])
+    # @traceable 데코레이터 제거 또는 수정  
     async def followup_feedback(self, req: FeedbackfollowRequest) -> AsyncGenerator[str, None]:
         """
         feedback/answer: 후속 요청에 대해
         단일 에이전트로 답변을 스트리밍으로 반환
         """
         prompt = feedback_followup(req)
-        response_generator = await call_feedback_agent(
-            prompt, 
-            stream=True,
-            session_id=str(req.sessionId) if hasattr(req, 'sessionId') else None,
-            endpoint="feedback-answer"
-        )
         
-        # Generator인 경우 yield로 전달
-        if hasattr(response_generator, '__iter__'):
-            for chunk in response_generator:
-                yield chunk
-        else:
-            # 단일 텍스트인 경우 SSE로 변환
-            for chunk in text_to_sse(str(response_generator)):
+        try:
+            response_generator = await call_feedback_agent(
+                prompt, 
+                stream=True,
+                session_id=str(req.sessionId) if hasattr(req, 'sessionId') else None,
+                endpoint="feedback-answer"
+            )
+            
+            # 디버깅: 반환된 객체의 타입 확인
+            logger.debug(f"[FOLLOWUP_FEEDBACK] response_generator type: {type(response_generator)}")
+            logger.debug(f"[FOLLOWUP_FEEDBACK] has __anext__: {hasattr(response_generator, '__anext__')}")
+            logger.debug(f"[FOLLOWUP_FEEDBACK] has __aiter__: {hasattr(response_generator, '__aiter__')}")
+            
+            # AsyncGenerator 처리를 try-except로 안전하게 처리
+            try:
+                # AsyncGenerator라고 가정하고 시도
+                logger.debug("[FOLLOWUP_FEEDBACK] Attempting AsyncGenerator processing")
+                async for chunk in response_generator:  # type: ignore
+                    yield chunk
+            except (TypeError, AttributeError) as e:
+                # AsyncGenerator가 아닌 경우 (str 등)
+                logger.debug(f"[FOLLOWUP_FEEDBACK] Not AsyncGenerator, processing as string: {e}")
+                text_content = str(response_generator)
+                for chunk in text_to_sse(text_content):
+                    yield chunk
+                    
+        except Exception as e:
+            logger.error(f"[FOLLOWUP_FEEDBACK] 전체 에러 발생: {str(e)}", exc_info=True)
+            # 에러 발생 시 대체 메시지
+            fallback_msg = "죄송합니다. 답변 생성 중 오류가 발생했습니다."
+            for chunk in text_to_sse(fallback_msg):
                 yield chunk
 
     # --- Interview ---
-    @traceable(run_type="chain", name="interview_start_endpoint", tags=["interview", "start", "question-bank"])
+    # @traceable 데코레이터 제거 또는 수정
     async def start_interview(self, req: InterviewStartRequest) -> AsyncGenerator[str, None]:
         """
         1) 문제 정보 + 사용자 코드로 질문 셋 생성
@@ -228,6 +291,9 @@ class ChatbotService:
 
         # 4) in-memory question_bank 저장
         save_question_bank(session_id, questions)
+        
+        # 원본 요청도 저장 (총평 생성용)
+        save_original_request(session_id, req)
 
         # 5) 첫 질문 꺼내기
         try:
@@ -239,6 +305,8 @@ class ChatbotService:
             logger.error(f"[INTERVIEW_FLOW] Session {session_id}: 질문 뱅크가 비어있어 대체 메시지 사용")
 
         # 6) SSE word-level 청킹으로 스트리밍
+        # 인터뷰 시작 상태 전송
+        asyncio.create_task(notify_interview_end(int(session_id), finished=False))
         chunk_count = 0
         for chunk in text_to_sse(first_q):
             chunk_count += 1
@@ -246,7 +314,7 @@ class ChatbotService:
         
         logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 첫 번째 질문 스트리밍 완료 ({chunk_count}개 청크)")
 
-    @traceable(run_type="chain", name="interview_followup_endpoint", tags=["interview", "followup", "decision"])
+    # @traceable 데코레이터 제거 또는 수정
     async def followup_interview(self, req: InterviewfollowRequest) -> AsyncGenerator[str, None]:
         """
         interview/answer: 
@@ -285,6 +353,8 @@ class ChatbotService:
             )
             
             if str(tail_q).strip():
+                # 인터뷰 진행 상태 전송
+                asyncio.create_task(notify_interview_end(int(session_id), finished=False))
                 for chunk in text_to_sse(str(tail_q)):
                     yield chunk
                 return
@@ -293,6 +363,8 @@ class ChatbotService:
         if has_next_question(session_id):
             logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 다음 주요 질문으로 이동")
             next_q = pop_next_question(session_id)
+            # 인터뷰 진행 상태 전송
+            asyncio.create_task(notify_interview_end(int(session_id), finished=False))
             for chunk in text_to_sse(next_q):
                 yield chunk
             return
@@ -308,19 +380,71 @@ class ChatbotService:
         )
         
         if str(decision).strip().lower() == "true":
-            # 6) 총평 생성
+            # 6) 총평 생성 - 멀티 에이전트 방식
             logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 인터뷰 종료 - 총평 생성 중")
-            stored_code = "<session 에 저장된 사용자 코드>"
-            eval_prompt = evaluation_prompt(context, stored_code, req.messages)
-            eval_md = await call_interview_agent(
-                eval_prompt,
-                stream=False,
-                session_id=session_id,
-                endpoint="interview-evaluation"
-            )
-            for chunk in text_to_sse(str(eval_md)):
-                yield chunk
-            clear_question_bank(session_id)
+            
+            original_req = get_original_request(session_id)
+            if original_req:
+                # 1) 잘한 점 생성
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 시작")
+                good_prompt = interview_evaluation_good_points(original_req, req.messages)
+                good_points = await call_interview_agent(
+                    good_prompt,
+                    stream=False,
+                    session_id=session_id,
+                    endpoint="interview-evaluation-good"
+                )
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 완료")
+
+                # 2) 개선할 점 생성
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 시작")
+                bad_prompt = interview_evaluation_bad_points(original_req, req.messages)
+                bad_points = await call_interview_agent(
+                    bad_prompt,
+                    stream=False,
+                    session_id=session_id,
+                    endpoint="interview-evaluation-bad"
+                )
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 완료")
+
+                # 3) 학습 추천사항 생성
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 시작")
+                rec_prompt = interview_evaluation_recommendations(original_req, req.messages, str(good_points), str(bad_points))
+                recommendations = await call_interview_agent(
+                    rec_prompt,
+                    stream=False,
+                    session_id=session_id,
+                    endpoint="interview-evaluation-recommendations"
+                )
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 완료")
+
+                # 4) 마크다운 형식으로 조합
+                full_evaluation = (
+                    f"## 📝 면접 총평\n\n"
+                    f"### 👍 잘한 점\n\n{good_points}\n\n"
+                    f"### 👎 개선할 점\n\n{bad_points}\n\n"
+                    f"### 📚 학습 추천사항\n\n{recommendations}"
+                )
+                
+                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: 총평 완료 - 마크다운 ({len(full_evaluation)} chars)")
+                
+                # 5) SSE 스트리밍으로 반환
+                for chunk in text_to_sse(full_evaluation):
+                    yield chunk
+                    
+                # 인터뷰 종료 신호 전송
+                asyncio.create_task(notify_interview_end(int(session_id), finished=True))
+                    
+                # 정리
+                clear_question_bank(session_id)
+                clear_original_request(session_id)
+            else:
+                logger.error(f"[INTERVIEW_FLOW] Session {session_id}: 원본 요청을 찾을 수 없음")
+                fallback = "## 📝 면접 총평\n\n죄송합니다. 총평 생성 중 오류가 발생했습니다."
+                for chunk in text_to_sse(fallback):
+                    yield chunk
+                # 인터뷰 종료 신호 전송 (오류 상황에서도)
+                asyncio.create_task(notify_interview_end(int(session_id), finished=True))
         else:
             # 7) 재생성 또는 예외 처리
             logger.warning(f"[INTERVIEW_FLOW] Session {session_id}: 예상치 못한 상황 - 대체 메시지 반환")
