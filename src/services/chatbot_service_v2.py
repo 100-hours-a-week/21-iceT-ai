@@ -369,88 +369,74 @@ class ChatbotService:
                 yield chunk
             return
 
-        # 5) 질문 모두 소진 → 종료 판단
-        logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 모든 질문 소진 - 종료 판단 중")
-        finish_decision_prompt = finish_prompt(context, [])
-        decision = await call_interview_agent(
-            finish_decision_prompt,
-            stream=False,
-            session_id=session_id,
-            endpoint="interview-finish"
-        )
+        # 5) 질문 모두 소진 → 강제 종료 (5개 질문 완료)
+        logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 모든 질문 소진 - 인터뷰 강제 종료")
         
-        if str(decision).strip().lower() == "true":
-            # 6) 총평 생성 - 멀티 에이전트 방식
-            logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 인터뷰 종료 - 총평 생성 중")
+        # 총평 생성 - 멀티 에이전트 방식
+        logger.info(f"[INTERVIEW_FLOW] Session {session_id}: 인터뷰 종료 - 총평 생성 중")
+        
+        original_req = get_original_request(session_id)
+        if original_req:
+            # 1) 잘한 점 생성
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 시작")
+            good_prompt = interview_evaluation_good_points(original_req, req.messages)
+            good_points = await call_interview_agent(
+                good_prompt,
+                stream=False,
+                session_id=session_id,
+                endpoint="interview-evaluation-good"
+            )
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 완료")
+
+            # 2) 개선할 점 생성
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 시작")
+            bad_prompt = interview_evaluation_bad_points(original_req, req.messages)
+            bad_points = await call_interview_agent(
+                bad_prompt,
+                stream=False,
+                session_id=session_id,
+                endpoint="interview-evaluation-bad"
+            )
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 완료")
+
+            # 3) 학습 추천사항 생성
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 시작")
+            rec_prompt = interview_evaluation_recommendations(original_req, req.messages, str(good_points), str(bad_points))
+            recommendations = await call_interview_agent(
+                rec_prompt,
+                stream=False,
+                session_id=session_id,
+                endpoint="interview-evaluation-recommendations"
+            )
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 완료")
+
+            # 4) 마크다운 형식으로 조합
+            full_evaluation = (
+                f"## 📝 면접 총평\n\n"
+                f"### 👍 잘한 점\n\n{good_points}\n\n"
+                f"### 👎 개선할 점\n\n{bad_points}\n\n"
+                f"### 📚 학습 추천사항\n\n{recommendations}"
+            )
             
-            original_req = get_original_request(session_id)
-            if original_req:
-                # 1) 잘한 점 생성
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 시작")
-                good_prompt = interview_evaluation_good_points(original_req, req.messages)
-                good_points = await call_interview_agent(
-                    good_prompt,
-                    stream=False,
-                    session_id=session_id,
-                    endpoint="interview-evaluation-good"
-                )
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 1/3 - 잘한 점 생성 완료")
-
-                # 2) 개선할 점 생성
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 시작")
-                bad_prompt = interview_evaluation_bad_points(original_req, req.messages)
-                bad_points = await call_interview_agent(
-                    bad_prompt,
-                    stream=False,
-                    session_id=session_id,
-                    endpoint="interview-evaluation-bad"
-                )
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 2/3 - 개선할 점 생성 완료")
-
-                # 3) 학습 추천사항 생성
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 시작")
-                rec_prompt = interview_evaluation_recommendations(original_req, req.messages, str(good_points), str(bad_points))
-                recommendations = await call_interview_agent(
-                    rec_prompt,
-                    stream=False,
-                    session_id=session_id,
-                    endpoint="interview-evaluation-recommendations"
-                )
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: Agent 3/3 - 학습 추천사항 생성 완료")
-
-                # 4) 마크다운 형식으로 조합
-                full_evaluation = (
-                    f"## 📝 면접 총평\n\n"
-                    f"### 👍 잘한 점\n\n{good_points}\n\n"
-                    f"### 👎 개선할 점\n\n{bad_points}\n\n"
-                    f"### 📚 학습 추천사항\n\n{recommendations}"
-                )
+            logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: 총평 완료 - 마크다운 ({len(full_evaluation)} chars)")
+            
+            # 5) SSE 스트리밍으로 반환
+            for chunk in text_to_sse(full_evaluation):
+                yield chunk
                 
-                logger.info(f"[INTERVIEW_EVALUATION] Session {session_id}: 총평 완료 - 마크다운 ({len(full_evaluation)} chars)")
+            # 인터뷰 종료 신호 전송
+            asyncio.create_task(notify_interview_end(int(session_id), finished=True))
                 
-                # 5) SSE 스트리밍으로 반환
-                for chunk in text_to_sse(full_evaluation):
-                    yield chunk
-                    
-                # 인터뷰 종료 신호 전송
-                asyncio.create_task(notify_interview_end(int(session_id), finished=True))
-                    
-                # 정리
-                clear_question_bank(session_id)
-                clear_original_request(session_id)
-            else:
-                logger.error(f"[INTERVIEW_FLOW] Session {session_id}: 원본 요청을 찾을 수 없음")
-                fallback = "## 📝 면접 총평\n\n죄송합니다. 총평 생성 중 오류가 발생했습니다."
-                for chunk in text_to_sse(fallback):
-                    yield chunk
-                # 인터뷰 종료 신호 전송 (오류 상황에서도)
-                asyncio.create_task(notify_interview_end(int(session_id), finished=True))
+            # 정리
+            clear_question_bank(session_id)
+            clear_original_request(session_id)
         else:
-            # 7) 재생성 또는 예외 처리
-            logger.warning(f"[INTERVIEW_FLOW] Session {session_id}: 예상치 못한 상황 - 대체 메시지 반환")
-            fallback = "죄송합니다. 추가 질문을 생성하는 데 문제가 발생했습니다."
+            logger.error(f"[INTERVIEW_FLOW] Session {session_id}: 원본 요청을 찾을 수 없음")
+            fallback = "## 📝 면접 총평\n\n죄송합니다. 총평 생성 중 오류가 발생했습니다."
             for chunk in text_to_sse(fallback):
                 yield chunk
+            # 인터뷰 종료 신호 전송 (오류 상황에서도)
+            asyncio.create_task(notify_interview_end(int(session_id), finished=True))
 
     # --- Summary ---
     @traceable(run_type="chain", name="summary_endpoint", tags=["summary", "conversation"])
